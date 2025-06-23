@@ -136,7 +136,7 @@ The application uses Model Context Protocol (MCP) for AI capabilities and tool i
 
 **MCP Configuration:**
 **MCP Configuration:**
-The MCP configuration is defined in `mcp.json` and includes:
+The MCP configuration is defined in `mcp_config.json` and includes:
 - Server definitions and connection settings
 - Available tools and their schemas
 - Resource definitions

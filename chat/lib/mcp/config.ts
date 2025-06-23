@@ -12,7 +12,7 @@ export class MCPConfigManager {
   private inputValues: Map<string, string> = new Map();
 
   /**
-   * Load MCP configuration from mcp.json file
+   * Load MCP configuration from mcp_config.json file
    */
   async loadConfig(): Promise<MCPConfig> {
     try {
@@ -21,11 +21,11 @@ export class MCPConfigManager {
       // Check if we're running in a server environment (Node.js)
       if (typeof window === 'undefined') {
         // Server-side: read from file system
-        const configPath = path.join(process.cwd(), 'mcp.json');
+        const configPath = path.join(process.cwd(), 'mcp_config.json');
         configData = fs.readFileSync(configPath, 'utf8');
       } else {
         // Client-side: use fetch
-        const response = await fetch('/mcp.json');
+        const response = await fetch('/mcp_config.json');
         if (!response.ok) {
           throw new Error(`Failed to load MCP config: ${response.statusText}`);
         }

@@ -3,7 +3,7 @@
   "servers": {
     "demoAgent": {
       "type": "http",
-      "url": "http://dataflow-mcp-demo:8080/mcp",
+      "url": "http://dataflow-demo-mcp:8080/mcp",
       "description": "Local data agent backend with AI capabilities",
       "timeout": 90000,
       "headers": {

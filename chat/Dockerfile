@@ -27,7 +27,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/tailwind.config.ts ./
 COPY --from=builder /app/postcss.config.mjs ./
-COPY --from=builder /app/mcp.json ./
+COPY --from=builder /app/mcp_config.json ./
 
 # Set environment variables
 ENV NODE_ENV=production

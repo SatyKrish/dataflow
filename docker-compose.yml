@@ -3,12 +3,12 @@ version: '3.8'
 services:
   dataflow-chat:
     build:
-      context: ../chat
+      context: chat
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     env_file:
-      - ../chat/.env.production
+      - chat/.env.production
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
@@ -17,14 +17,14 @@ services:
       retries: 3
       start_period: 10s
 
-  dataflow-mcp-demo:
+  dataflow-demo-mcp:
     build:
-      context: ../mcp/demo
+      context: mcp/demo
       dockerfile: Dockerfile
     ports:
       - "8081:8080"
     env_file:
-      - ../mcp/demo/.env
+      - mcp/demo/.env
     volumes:
       - ./logs/demo:/app/logs
     restart: unless-stopped
@@ -36,14 +36,14 @@ services:
       start_period: 10s
     profiles: ["demo"]
 
-  dataflow-mcp-denodo:
+  dataflow-denodo-mcp:
     build:
-      context: ../mcp/denodo
+      context: mcp/denodo
       dockerfile: Dockerfile
     ports:
       - "8082:8080"
     env_file:
-      - ../mcp/denodo/.env
+      - mcp/denodo/.env
     volumes:
       - ./logs/denodo:/app/logs
     restart: unless-stopped
@@ -53,7 +53,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    profiles: ["denudo"]
+    profiles: ["denodo"]
 
 # To enable demo or denudo MCP servers, use:
 #   docker compose --profile demo up
