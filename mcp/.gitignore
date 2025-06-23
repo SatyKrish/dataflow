@@ -1,0 +1,6 @@
+## python
+.venv/
+__pycache__/
+.DS_Store
+demo/.env.local
+demo/.env

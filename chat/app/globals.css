@@ -1,0 +1,198 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-black via-red-600 to-black dark:from-white dark:via-red-500 dark:to-white;
+    text-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
+    filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.2));
+  }    /* Responsive text utilities for better wrapping */
+  .text-wrap-responsive {
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    hyphens: auto !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+  
+  /* Better code wrapping */
+  .code-wrap {
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+  /* Force prose content to wrap properly */
+  .text-wrap-responsive p,
+  .text-wrap-responsive div,
+  .text-wrap-responsive span,
+  .text-wrap-responsive pre,
+  .text-wrap-responsive code {
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100% !important;
+    white-space: pre-wrap !important;
+    min-width: 0 !important;
+  }
+  
+  /* Specific handling for long words and URLs */
+  .text-wrap-responsive a,
+  .text-wrap-responsive strong,
+  .text-wrap-responsive em {
+    word-break: break-all !important;
+    overflow-wrap: anywhere !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+    /* Force any long text content to wrap */
+  .text-wrap-responsive * {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+
+@layer base {
+  :root {
+    /* Minimalist Black/White/Red Theme */
+    --background: 0 0% 100%; /* Pure White */
+    --foreground: 0 0% 0%; /* Pure Black */
+
+    --muted: 0 0% 96%; /* Very Light Gray */
+    --muted-foreground: 0 0% 40%; /* Mid Gray */
+
+    --popover: 0 0% 100%; /* Pure White */
+    --popover-foreground: 0 0% 0%; /* Pure Black */
+
+    --card: 0 0% 100%; /* Pure White */
+    --card-foreground: 0 0% 0%; /* Pure Black */
+
+    --border: 0 0% 90%; /* Light Gray Border */
+    --input: 0 0% 98%; /* Very Light Gray */
+
+    --primary: 0 0% 0%; /* Pure Black */
+    --primary-foreground: 0 0% 100%; /* Pure White */
+
+    --secondary: 0 0% 96%; /* Very Light Gray */
+    --secondary-foreground: 0 0% 0%; /* Pure Black */
+
+    --accent: 0 84% 60%; /* Pure Red Accent */
+    --accent-foreground: 0 0% 100%; /* White on Red */
+
+    --destructive: 0 84% 60%; /* Red for destructive actions */
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 0 84% 60%; /* Red focus ring */
+    --radius: 0.25rem; /* Minimal border radius */
+    
+    /* Minimalist Chart Colors */
+    --chart-1: 0 0% 0%; /* Pure Black */
+    --chart-2: 0 84% 60%; /* Pure Red */
+    --chart-3: 0 0% 60%; /* Dark Gray */
+    --chart-4: 0 0% 80%; /* Light Gray */
+    --chart-5: 0 0% 40%; /* Mid Gray */
+    
+    /* Minimalist Sidebar colors */
+    --sidebar-background: 0 0% 100%; /* Pure White */
+    --sidebar-foreground: 0 0% 0%; /* Pure Black */
+    --sidebar-primary: 0 0% 0%; /* Pure Black */
+    --sidebar-primary-foreground: 0 0% 100%; /* Pure White */
+    --sidebar-accent: 0 84% 60%; /* Pure Red */
+    --sidebar-accent-foreground: 0 0% 100%; /* White */
+    --sidebar-border: 0 0% 90%; /* Light Gray borders */
+    --sidebar-ring: 0 84% 60%; /* Red */
+  }
+  .dark {
+    /* Minimalist Dark Mode - Pure Black Theme */
+    --background: 0 0% 0%; /* Pure Black */
+    --foreground: 0 0% 100%; /* Pure White */
+    --card: 0 0% 4%; /* Very Dark Gray */
+    --card-foreground: 0 0% 100%; /* Pure White */
+    --popover: 0 0% 4%; /* Very Dark Gray */
+    --popover-foreground: 0 0% 100%; /* Pure White */
+    --primary: 0 0% 100%; /* Pure White in dark mode */
+    --primary-foreground: 0 0% 0%; /* Pure Black text */
+    --secondary: 0 0% 8%; /* Dark Gray */
+    --secondary-foreground: 0 0% 100%; /* Pure White */
+    --muted: 0 0% 8%; /* Dark Gray */
+    --muted-foreground: 0 0% 60%; /* Mid Gray */
+    --accent: 0 84% 65%; /* Slightly brighter red in dark mode */
+    --accent-foreground: 0 0% 0%; /* Black on red */
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 15%; /* Dark Gray border */
+    --input: 0 0% 8%; /* Dark Gray */
+    --ring: 0 84% 65%;
+    
+    /* Dark mode chart colors */
+    --chart-1: 0 0% 100%; /* Pure White */
+    --chart-2: 0 84% 65%; /* Red */
+    --chart-3: 0 0% 80%; /* Light Gray */
+    --chart-4: 0 0% 60%; /* Mid Gray */
+    --chart-5: 0 0% 40%; /* Dark Gray */
+    
+    --sidebar-background: 0 0% 0%; /* Pure Black */
+    --sidebar-foreground: 0 0% 100%; /* Pure White */
+    --sidebar-primary: 0 0% 100%; /* Pure White */
+    --sidebar-primary-foreground: 0 0% 0%; /* Pure Black */
+    --sidebar-accent: 0 84% 65%; /* Red */
+    --sidebar-accent-foreground: 0 0% 0%; /* Black */
+    --sidebar-border: 0 0% 15%; /* Dark Gray */
+    --sidebar-ring: 0 84% 65%; /* Red */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Enhanced scrollbar styles for better visibility */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/40 rounded-full;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/60;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-muted/30;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-corner {
+    @apply bg-muted/30;
+  }
+
+  /* For Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) hsl(var(--muted) / 0.3);
+  }
+
+  /* Ensure scroll areas are properly styled */
+  [data-radix-scroll-area-viewport] {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+}

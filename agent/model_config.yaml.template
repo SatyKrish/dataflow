@@ -1,0 +1,17 @@
+# For OpenAI
+provider: autogen_ext.models.openai.OpenAIChatCompletionClient
+config:
+  model: gpt-4o-mini
+  api_key: YOUR_OPENAI_API_KEY_HERE
+  
+
+# For Azure OpenAI (alternative)
+# provider: autogen_ext.models.openai.AzureOpenAIChatCompletionClient
+# config:
+#   model: gpt-4o
+#   azure_endpoint: https://YOUR-ENDPOINT.openai.azure.com/
+#   azure_deployment: YOUR-DEPLOYMENT-NAME
+#   api_version: 2024-02-01
+#   api_key: YOUR_AZURE_API_KEY_HERE
+
+# model_info=ModelInfo(vision=True, function_calling=True, json_output=True, family="unknown", structured_output=True)
