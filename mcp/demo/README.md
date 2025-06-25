@@ -1,315 +1,396 @@
 # Demo MCP Server
 
-A Model Context Protocol (MCP) server that provides general purpose AI tools with synthetic data generation capabilities using Azure OpenAI. Uses HTTP transport for containerized deployments and web services.
+FastMCP-powered AI tools server providing general AI assistance and synthetic data generation using Azure OpenAI or OpenAI. Features multiple transport options and enterprise-ready deployment.
 
-## Features
+## Implementation Details
 
-- 🤖 **General Purpose AI**: Ask questions and get intelligent responses on any topic
-- 📊 **Synthetic Data Generation**: Generate realistic synthetic data for testing and development
-- � **Multiple Request Modes**: Support for generate, analyze, and info modes
-- 🏥 **Health Monitoring**: Built-in health check functionality
-- 🔒 **Secure Authentication**: Azure OpenAI API key based authentication
-- 📝 **Comprehensive Logging**: Detailed logging for debugging and monitoring
-- ⚡ **Async Support**: Fully asynchronous implementation for better performance
-- 🌐 **HTTP Transport**: RESTful API with JSON-RPC 2.0 protocol support
-- 🐳 **Docker Support**: Ready-to-deploy Docker containers
+### FastMCP Integration
+- **Framework**: FastMCP 2.9+ with automatic protocol handling
+- **Transports**: HTTP, STDIO, SSE support
+- **Validation**: Automatic type-hint based parameter validation
+- **Error Handling**: MCP-compliant error responses
 
-## Synthetic Data Types
+### Features
+- 🤖 **General AI assistance** with multiple modes (generate, analyze, info)
+- 📊 **Synthetic data generation** for testing and development
+- ⚡ **Async implementation** for optimal performance
+- 🔒 **Secure authentication** with API key management
+- 📝 **Comprehensive logging** with structured output
+- 🏥 **Health monitoring** with detailed status reporting
 
-The AI can generate realistic synthetic data for:
+## Available Tools
 
-- **People**: Names, ages, emails, addresses, occupations, and more
-- **Companies**: Business information, revenue, industry sectors, locations
-- **Products**: Product details, pricing, categories, specifications
-- **Events**: Conferences, meetings, workshops with attendees and schedules
-- **Sales**: Transaction data, customer information, sales metrics
-- **Surveys**: Response data, demographics, satisfaction scores
+### 1. ask_ai
+```python
+@mcp.tool
+async def ask_ai(question: str, mode: str = "generate") -> str:
+    """
+    AI assistant for general questions and tasks
+    
+    Args:
+        question: The question or task description
+        mode: Operation mode - 'generate', 'analyze', or 'info'
+    
+    Returns:
+        AI-generated response based on the question and mode
+    """
+```
+
+**Modes**:
+- `generate`: Create new content, write code, compose text
+- `analyze`: Analyze existing data, review code, provide insights  
+- `info`: Provide factual information, explanations, tutorials
+
+### 2. generate_synthetic_data
+```python
+@mcp.tool
+async def generate_synthetic_data(data_type: str, count: int = 10) -> str:
+    """
+    Generate realistic synthetic data for testing and development
+    
+    Args:
+        data_type: Type of data to generate (people, companies, products, etc.)
+        count: Number of records to generate (1-100)
+    
+    Returns:
+        JSON string containing generated synthetic data
+    """
+```
+
+**Supported Data Types**:
+- `people`: Names, ages, emails, addresses, occupations
+- `companies`: Business info, revenue, industry, locations
+- `products`: Product details, pricing, categories, specs
+- `events`: Conferences, meetings, workshops with attendees
+- `sales`: Transaction data, customer info, metrics
+- `surveys`: Response data, demographics, satisfaction scores
+
+## Setup & Configuration
+
+### Installation
+```bash
+cd mcp/demo
+pip install -r requirements.txt
+cp .env.template .env
+```
+
+### Environment Configuration
+```env
+# Azure OpenAI (recommended)
+AZURE_OPENAI_API_KEY=your-azure-openai-key
+AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com
+AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+AZURE_OPENAI_API_VERSION=2024-02-15-preview
+
+# OR OpenAI
+OPENAI_API_KEY=your-openai-key
+
+# Server Configuration
+LOG_LEVEL=INFO
+PORT=8081
+HOST=0.0.0.0
+```
+
+### Running the Server
+
+**FastMCP Implementation**:
+```bash
+# HTTP transport (web services)
+python fastmcp_main.py --transport http --port 8081
+
+# STDIO transport (Claude Desktop)
+python fastmcp_main.py --transport stdio
+
+# SSE transport (streaming)  
+python fastmcp_main.py --transport sse --port 8081
+
+# With custom configuration
+python fastmcp_main.py --transport http --port 8082 --log-level DEBUG
+```
+
+**Legacy Implementation** (for comparison):
+```bash
+python main.py --port 8080
+```
+
+## API Reference
+
+### HTTP Transport
+
+**Endpoint**: `POST /mcp`
+**Protocol**: JSON-RPC 2.0
+
+**List available tools**:
+```bash
+curl -X POST http://localhost:8081/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/list",
+    "id": 1
+  }'
+```
+
+**Call AI tool**:
+```bash
+curl -X POST http://localhost:8081/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "ask_ai",
+      "arguments": {
+        "question": "Explain machine learning",
+        "mode": "info"
+      }
+    },
+    "id": 2
+  }'
+```
+
+**Generate synthetic data**:
+```bash
+curl -X POST http://localhost:8081/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "generate_synthetic_data",
+      "arguments": {
+        "data_type": "people",
+        "count": 5
+      }
+    },
+    "id": 3
+  }'
+```
+
+### Health Check
+```bash
+curl http://localhost:8081/health
+
+# Response:
+{
+  "status": "healthy",
+  "server": "Demo Server",
+  "version": "2.9.0",
+  "tools": 2,
+  "ai_provider": "azure_openai",
+  "uptime": "0:15:42"
+}
+```
+
+## Implementation Architecture
+
+### FastMCP Server (187 lines)
+```python
+from fastmcp import FastMCP
+import asyncio
+import json
+
+# Initialize FastMCP server
+mcp = FastMCP("Demo Server")
+
+@mcp.tool
+async def ask_ai(question: str, mode: str = "generate") -> str:
+    """AI assistant tool implementation"""
+    client = get_ai_client()  # Azure OpenAI or OpenAI
+    
+    system_prompts = {
+        "generate": "You are a creative AI assistant...",
+        "analyze": "You are an analytical AI assistant...", 
+        "info": "You are an informative AI assistant..."
+    }
+    
+    response = await client.chat.completions.create(
+        model=get_model_name(),
+        messages=[
+            {"role": "system", "content": system_prompts[mode]},
+            {"role": "user", "content": question}
+        ],
+        temperature=0.7
+    )
+    
+    return response.choices[0].message.content
+
+@mcp.tool
+async def generate_synthetic_data(data_type: str, count: int = 10) -> str:
+    """Synthetic data generation implementation"""
+    if count > 100:
+        raise ValueError("Count cannot exceed 100")
+    
+    prompt = f"Generate {count} realistic {data_type} records in JSON format..."
+    response = await ask_ai(prompt, "generate")
+    
+    # Validate and format JSON
+    try:
+        data = json.loads(response)
+        return json.dumps(data, indent=2)
+    except json.JSONDecodeError:
+        # Fallback: extract JSON from response
+        return extract_json_from_text(response)
+
+if __name__ == "__main__":
+    mcp.run()  # FastMCP handles everything else!
+```
+
+### Migration Benefits
+
+**Code Reduction**: From 758 lines to 187 lines (75% reduction)
+
+**Original Implementation Issues**:
+- Manual JSON-RPC protocol handling (150+ lines)
+- Custom parameter validation (50+ lines)
+- Manual error formatting (30+ lines)
+- CORS handling (20+ lines)
+- Health check implementation (25+ lines)
+
+**FastMCP Automatic Features**:
+- ✅ Protocol handling (JSON-RPC 2.0)
+- ✅ Parameter validation (from type hints)
+- ✅ Error formatting (MCP-compliant)
+- ✅ CORS handling (configurable)
+- ✅ Health checks (built-in)
+- ✅ Multiple transports (HTTP/STDIO/SSE)
 
 ## Development
 
 ### Project Structure
-
 ```
 demo/
-├── http_server.py              # MCP HTTP server implementation  
-├── main.py                     # Entry point script
-├── run_local.py                # Convenience script for local development
-├── requirements.txt            # Python dependencies
-├── .env.local                  # Environment variables template
-├── Dockerfile                  # Docker container configuration
-├── docker-compose.yml          # Docker Compose configuration
-└── README.md                   # This file
+├── fastmcp_server.py          # New FastMCP implementation (187 lines)
+├── fastmcp_main.py            # FastMCP entry point with CLI
+├── test_migration.py          # Migration validation tests
+├── Dockerfile.fastmcp         # FastMCP container config
+├── requirements.txt           # Updated dependencies with FastMCP
+├── .env.template              # Environment variables template
+├── main.py                    # Legacy entry point
+├── server.py                  # Legacy implementation (758 lines)
+└── README.md                  # This file
 ```
-
-## Installation
-
-### Local Development Setup
-
-1. **Clone the repository and navigate to the demo directory:**
-```bash
-cd /path/to/demo
-```
-
-2. **Create a virtual environment:**
-```bash
-python3 -m venv .venv
-```
-
-3. **Activate the virtual environment:**
-```bash
-# On macOS/Linux
-source .venv/bin/activate
-```
-
-4. **Install dependencies:**
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-5. **Set up environment variables:**
-```bash
-# Copy the template and fill in your values
-cp .env.local .env
-
-# Edit .env and add your Azure OpenAI details
-# AZURE_OPENAI_API_KEY=your-azure-openai-api-key-here
-# AZURE_OPENAI_ENDPOINT=your-azure-openai-endpoint-here
-# AZURE_OPENAI_DEPLOYMENT=your-azure-openai-deployment-name-here
-# AZURE_OPENAI_API_VERSION=2024-02-01
-```
-
-## Configuration
-
-The server can be configured using environment variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AZURE_OPENAI_API_KEY` | Required | Azure OpenAI API key for generating responses |
-| `AZURE_OPENAI_ENDPOINT` | Required | Azure OpenAI endpoint (e.g., https://<your-resource-name>.openai.azure.com) |
-| `AZURE_OPENAI_DEPLOYMENT` | Required | Azure OpenAI deployment name |
-| `AZURE_OPENAI_API_VERSION` | Required | Azure OpenAI API version (e.g., 2024-02-01) |
-| `MCP_SERVER_PORT` | `8080` | Port to run the HTTP server on |
-| `MCP_SERVER_HOST` | `0.0.0.0` | Host to bind the HTTP server to |
-
-## Usage
-
-### Local Deployment
-
-**Quick Start:**
-```bash
-# Using the convenience script (loads .env automatically)
-python3 run_local.py
-```
-
-**Or manually:**
-```bash
-# Run mcp server directly
-python3 main.py
-```
-
-### Testing the Server
-
-Once the server is running, you can test it using curl or any HTTP client:
-
-**1. Check server health:**
-```bash
-curl http://localhost:8080/health
-```
-
-**2. Get server information:**
-```bash
-curl http://localhost:8080/info
-```
-
-**3. Test MCP tool listing:**
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/list",
-    "params": {}
-  }'
-```
-
-**4. Test AI request:**
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 2,
-    "method": "tools/call",
-    "params": {
-      "name": "ask_ai",
-      "arguments": {
-        "question": "Generate 5 people with names and ages",
-        "mode": "generate"
-      }
-    }
-  }'
-```
-
-### Production Deployment
-
-### Docker Deployment
-
-```bash
-# Build and start the service
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop the service
-docker-compose down
-```
-
-### HTTP Endpoints
-
-When running with HTTP transport, the following endpoints are available:
-
-- `POST /mcp` - Main MCP JSON-RPC endpoint
-- `GET /health` - Health check endpoint
-- `GET /info` - Server information
-- `GET /` - Basic server information
-
-### Available Tools
-
-#### `ask_ai(question, mode="generate")`
-Ask the general purpose AI for information or to generate synthetic data.
-
-**Parameters:**
-- `question` (str): Natural language question or request
-- `mode` (str): Request mode - "generate", "analyze", or "info"
-
-**Examples:**
-
-**Generate Mode:**
-```python
-# Generate synthetic data
-ask_ai("Generate 10 people with names, ages, and emails", mode="generate")
-ask_ai("Create 5 companies in the technology sector", mode="generate")
-ask_ai("Generate product data with pricing information", mode="generate")
-```
-
-**Analyze Mode:**
-```python
-# Get insights and analysis
-ask_ai("Analyze sales trends for e-commerce businesses", mode="analyze")
-ask_ai("What factors affect customer satisfaction?", mode="analyze")
-```
-
-**Info Mode:**
-```python
-# Get information about capabilities
-ask_ai("What data types can you generate?", mode="info")
-ask_ai("Tell me about people data generation", mode="info")
-```
-
-#### `health_check()`
-Check the health and connectivity of the Azure OpenAI API.
-
-#### `get_server_info()`
-Get information about the MCP server configuration and capabilities.
-
-## Example Requests
-
-### Generate Synthetic People Data
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/call",
-    "params": {
-      "name": "ask_ai",
-      "arguments": {
-        "question": "Generate 3 people with names, ages, occupations, and email addresses in JSON format",
-        "mode": "generate"
-      }
-    }
-  }'
-```
-
-### Generate Company Data
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 2,
-    "method": "tools/call",
-    "params": {
-      "name": "ask_ai",
-      "arguments": {
-        "question": "Create 5 technology companies with revenue and employee count",
-        "mode": "generate"
-      }
-    }
-  }'
-```
-
-### Get Analysis
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 3,
-    "method": "tools/call",
-    "params": {
-      "name": "ask_ai",
-      "arguments": {
-        "question": "Analyze the key factors that influence product pricing strategies",
-        "mode": "analyze"
-      }
-    }
-  }'
-```
-
-## Next Steps
 
 ### Adding New Tools
 
-To add new tools to the MCP server:
-
-1. Define a new async function in `http_server.py`
-2. Add it to the `AVAILABLE_TOOLS` dictionary
-3. Add the tool schema in the `tools/list` method
-4. Implement proper error handling and logging
-
-Example:
 ```python
-async def new_tool(param: str) -> str:
-    """Description of what this tool does.
-    
-    Args:
-        param: Description of the parameter.
-        
-    Returns:
-        str: Description of the return value.
-    """
-    logger.info(f"Executing new_tool with param: {param}")
-    try:
-        # Implementation here
-        return "Result"
-    except Exception as e:
-        logger.error(f"Error in new_tool: {e}")
-        return f"Error: {e}"
-
-# Add to AVAILABLE_TOOLS
-AVAILABLE_TOOLS = {
-    "ask_ai": ask_ai,
-    "health_check": health_check,
-    "get_server_info": get_server_info,
-    "new_tool": new_tool  # Add your new tool here
-}
+@mcp.tool
+async def new_custom_tool(param1: str, param2: int = 5) -> str:
+    """Description for the LLM about what this tool does"""
+    # Type hints automatically become parameter validation
+    # Docstring becomes tool description
+    # Implementation logic only
+    return f"Processed {param1} with value {param2}"
 ```
 
-## License
+### Testing
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+**Validate Migration**:
+```bash
+# Start both servers
+python main.py --port 8080 &           # Legacy
+python fastmcp_main.py --port 8081 &   # FastMCP
+
+# Run comparison tests
+python test_migration.py --original-port 8080 --fastmcp-port 8081
+
+# Expected output:
+# ✅ Tool parity: Both servers expose the same tools
+# ✅ Both servers are functional
+# ✅ Migration validation PASSED
+```
+
+**Manual Testing**:
+```bash
+# Test tool functionality
+python -c "
+from fastmcp_server import mcp
+print('Available tools:', [tool.name for tool in mcp.tools])
+"
+
+# Test with different AI providers
+AZURE_OPENAI_API_KEY=xxx python fastmcp_main.py --transport http
+OPENAI_API_KEY=xxx python fastmcp_main.py --transport http
+```
+
+## Deployment
+
+### Docker
+```bash
+# Build FastMCP container
+docker build -f Dockerfile.fastmcp -t dataflow/demo-mcp:fastmcp .
+
+# Run with environment
+docker run -p 8081:8081 \
+  -e AZURE_OPENAI_API_KEY=xxx \
+  -e AZURE_OPENAI_ENDPOINT=xxx \
+  dataflow/demo-mcp:fastmcp
+
+# Docker Compose
+docker-compose --profile fastmcp up -d
+```
+
+### Production Configuration
+```yaml
+# docker-compose.yml
+services:
+  demo-mcp-fastmcp:
+    build:
+      context: ./mcp/demo
+      dockerfile: Dockerfile.fastmcp
+    environment:
+      TRANSPORT: http
+      PORT: 8081
+      LOG_LEVEL: INFO
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**AI Provider Configuration**:
+```bash
+# Test Azure OpenAI connection
+python -c "
+import os
+from openai import AzureOpenAI
+client = AzureOpenAI(
+    api_key=os.getenv('AZURE_OPENAI_API_KEY'),
+    azure_endpoint=os.getenv('AZURE_OPENAI_ENDPOINT'),
+    api_version='2024-02-15-preview'
+)
+print('Connection test:', client.models.list())
+"
+```
+
+**FastMCP Issues**:
+```bash
+# Check FastMCP installation
+python -c "import fastmcp; print(fastmcp.__version__)"
+
+# Enable debug logging
+LOG_LEVEL=DEBUG python fastmcp_main.py
+
+# Test tool calls directly
+python -c "
+import asyncio
+from fastmcp_server import ask_ai
+result = asyncio.run(ask_ai('test question'))
+print(result)
+"
+```
+
+**Performance Issues**:
+- Monitor memory usage during large data generation
+- Use connection pooling for high-throughput scenarios
+- Consider caching for repeated synthetic data requests
+- Enable async logging for better performance

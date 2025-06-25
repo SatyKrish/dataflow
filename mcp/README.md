@@ -1,84 +1,190 @@
-# Digit MCP Servers
+# DataFlow MCP Servers
 
-A collection of Model Context Protocol (MCP) servers that provide tools for natural language database interactions and AI-powered data queries.
+Model Context Protocol (MCP) servers built with FastMCP 2.9+ for natural language database interactions and AI-powered tools. This directory contains two production-ready MCP servers with enterprise deployment capabilities.
 
-## Overview
+## FastMCP Migration ✅
 
-This repository contains multiple MCP server implementations that enable natural language querying of different data sources through the Model Context Protocol. Each server provides HTTP transport capabilities for containerized deployments and web services integration.
+Successfully migrated from custom HTTP implementation to FastMCP 2.9+ with significant improvements:
 
-## 🏗️ Project Structure
+- **69% code reduction** (1,269 → 388 lines total)
+- **Multiple transports**: HTTP, STDIO, SSE support
+- **Enhanced validation**: Automatic type-hint based validation  
+- **Standards compliance**: Full MCP 2024-11-05 specification
+- **Future-ready**: Middleware, auth, composition support
 
+## Available Servers
+
+### Demo Server (`/demo`)
+**Purpose**: AI-powered tools with synthetic data generation  
+**Provider**: Azure OpenAI or OpenAI  
+**Tools**: `ask_ai`, `generate_synthetic_data`  
+**Use Cases**: Development, testing, general AI assistance
+
+### Denodo Server (`/denodo`) 
+**Purpose**: Enterprise data virtualization with natural language queries  
+**Provider**: Denodo AI SDK  
+**Tools**: `denodo_query`  
+**Use Cases**: Production database access, business intelligence
+
+## Quick Start
+
+### Development Setup
+```bash
+# Demo server
+cd demo && pip install -r requirements.txt && cp .env.template .env
+
+# Denodo server  
+cd denodo && pip install -r requirements.txt && cp .env.template .env
 ```
-digit-mcp/
-├── demo/              # Demo MCP server with simulated banking database
-├── denodo/            # Denodo AI SDK MCP server
-├── LICENSE            # MIT License
-└── README.md          
+
+### Running Servers
+```bash
+# Demo server (FastMCP)
+cd demo && python fastmcp_main.py --transport http --port 8081
+
+# Denodo server (FastMCP)
+cd denodo && python fastmcp_main.py --transport http --port 8082
 ```
 
-## 📋 Available Servers
+### Docker Deployment
+```bash
+# Start both FastMCP servers
+docker-compose --profile fastmcp up -d
 
-### 🏦 Demo MCP Server (`/demo`)
+# Individual servers
+docker-compose up -d dataflow-mcp-demo-fastmcp
+docker-compose up -d dataflow-mcp-denodo-fastmcp
+```
 
-A demonstration MCP server that provides tools to interact with a simulated banking database using OpenAI.
+## Server Coordination
 
-**Key Features:**
-- Natural language database queries using OpenAI
-- Simulated banking data for testing and demonstrations
-- HTTP transport with JSON-RPC 2.0 protocol
-- Docker containerization support
-- Comprehensive logging and health monitoring
+### Port Allocation
+- **Demo Server**: 8081 (FastMCP), 8080 (Legacy)
+- **Denodo Server**: 8082 (FastMCP), 8080 (Legacy)
+- **Health Checks**: `GET /health` on each server
 
-**Use Cases:**
-- Testing MCP implementations
-- Demonstrating natural language database queries
-- Learning MCP protocol integration
+### Transport Options
+Both servers support FastMCP's multiple transport protocols:
 
-### 🔌 Denodo AI SDK MCP Server (`/denodo`)
+```bash
+# HTTP for web applications
+python fastmcp_main.py --transport http --port 808X
 
-An MCP server that interfaces with Denodo AI SDK for enterprise data virtualization and AI-powered analytics.
+# STDIO for Claude Desktop
+python fastmcp_main.py --transport stdio
 
-**Key Features:**
-- Integration with Denodo AI SDK
-- Enterprise-grade authentication (username/password)
-- Data and metadata exploration modes
-- Async implementation for performance
-- Production-ready Docker containers
+# SSE for streaming applications  
+python fastmcp_main.py --transport sse --port 808X
+```
 
-**Use Cases:**
-- Enterprise data virtualization
-- AI-powered business intelligence
-- Data governance and metadata management
+### Tool Discovery
+```bash
+# List all available tools across servers
+curl -X POST http://localhost:8081/mcp -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+curl -X POST http://localhost:8082/mcp -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
 
-## 📚 Documentation
+## Migration Impact
 
-Each server includes detailed documentation:
+| Server | Before | After | Reduction |
+|--------|--------|-------|-----------|
+| **Demo** | 758 lines | 187 lines | 75% |
+| **Denodo** | 511 lines | 201 lines | 61% |
+| **Total** | 1,269 lines | 388 lines | **69%** |
 
-- [`demo/README.md`](./demo/README.md) - Complete demo server documentation
-- [`denodo/README.md`](./denodo/README.md) - Complete denodo server documentation
+**Legacy files preserved** for comparison and rollback capability.
 
-## 🤝 Contributing
+## Production Deployment
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+### Docker Compose Configuration
+```yaml
+services:
+  # Demo MCP Server
+  dataflow-mcp-demo-fastmcp:
+    build:
+      context: ./demo
+      dockerfile: Dockerfile.fastmcp
+    environment:
+      - TRANSPORT=http
+      - PORT=8081
+    ports:
+      - "8081:8081"
 
-## 📄 License
+  # Denodo MCP Server  
+  dataflow-mcp-denodo-fastmcp:
+    build:
+      context: ./denodo
+      dockerfile: Dockerfile.fastmcp
+    environment:
+      - TRANSPORT=http
+      - PORT=8082
+    ports:
+      - "8082:8082"
+    depends_on:
+      - denodo-ai-sdk
+```
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Health Monitoring
+```bash
+# Check all MCP servers
+curl http://localhost:8081/health  # Demo
+curl http://localhost:8082/health  # Denodo
 
-## 🆘 Support
+# Expected responses include server status, tool count, and uptime
+```
 
-For questions and support:
+## Development
 
-1. Check the individual server README files for specific documentation
-2. Review the logs for troubleshooting information
-3. Open an issue in this repository for bugs or feature requests
+### Adding New MCP Servers
 
-## 🔗 Related Links
+1. **Create server directory** under `/mcp/new-server`
+2. **Implement FastMCP server** following existing patterns
+3. **Add Docker configuration** with unique port
+4. **Update docker-compose.yml** with new service
+5. **Document tools and usage** in server-specific README
 
-- [Model Context Protocol (MCP) Documentation](https://github.com/modelcontextprotocol)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
-- [Denodo AI SDK Documentation](https://www.denodo.com/en/solutions/by-capability/ai-software-development-kit)
+### Server Communication
+
+MCP servers are designed to be independent but can be coordinated:
+
+```python
+# Example: Multi-server tool orchestration
+async def coordinated_query():
+    # Step 1: Generate synthetic data (Demo server)
+    synthetic_data = await call_mcp_tool("demo", "generate_synthetic_data", 
+                                       {"data_type": "customers", "count": 100})
+    
+    # Step 2: Query real database (Denodo server)  
+    real_data = await call_mcp_tool("denodo", "denodo_query",
+                                   {"query": "SELECT COUNT(*) FROM customers"})
+    
+    return {"synthetic": synthetic_data, "real": real_data}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Port conflicts**:
+```bash
+# Check port usage
+lsof -i :8081 :8082
+
+# Use alternative ports
+python fastmcp_main.py --port 8083
+```
+
+**Server connectivity**:
+```bash
+# Test individual servers
+curl http://localhost:8081/health
+curl http://localhost:8082/health
+
+# Test tool availability
+curl -X POST http://localhost:808X/mcp \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
+```
+
+For detailed implementation, configuration, and troubleshooting information, see the individual server README files:
+- [Demo Server README](./demo/README.md)
+- [Denodo Server README](./denodo/README.md)

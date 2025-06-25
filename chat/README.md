@@ -1,460 +1,345 @@
-# AutoGen Chat UI
+# DataFlow Chat Interface
 
-A modern, AI-powered chat interface built with Next.js that integrates with AutoGen Core and FastAPI backends. Features real-time streaming, artifact management, chart rendering, and session persistence.
+Modern React chat interface built with Next.js 15, featuring real-time streaming, artifact management, and Azure SSO authentication. Integrates seamlessly with the DataFlow Agent Core and MCP servers.
 
-![AutoGen Chat UI](https://via.placeholder.com/800x400/1e293b/ffffff?text=AutoGen+Chat+UI)
+## Implementation Details
 
-## ✨ Features
+### Technology Stack
+- **Framework**: Next.js 15 with App Router
+- **UI Components**: shadcn/ui with Radix primitives
+- **Styling**: Tailwind CSS with CSS variables for theming
+- **Authentication**: NextAuth.js with Azure AD provider
+- **State Management**: React hooks with local storage persistence
+- **Charts**: Recharts for interactive data visualization
+- **Diagrams**: Mermaid for flowcharts and sequence diagrams
 
-- 🤖 **AI Agent Integration** - Seamless integration with AutoGen Core and FastAPI
-- 💬 **Real-time Streaming** - Live message streaming with smooth animations
-- 📊 **Artifact Management** - Code blocks, charts, and diagrams in a dedicated panel
-- 📈 **Chart Rendering** - Interactive charts with Recharts integration
-- 🎨 **Mermaid Diagrams** - Support for flowcharts and diagrams
-- 🔐 **Azure SSO Authentication** - Environment-based auth with NextAuth.js
-- 💾 **Session Persistence** - Chat history saved locally
-- 🎯 **Responsive Design** - Works on desktop and mobile
-- 🌙 **Modern UI** - Built with shadcn/ui and Tailwind CSS
+### Key Features
+- ✨ **Real-time streaming** with typewriter animations
+- 📊 **Artifact panel** for code, charts, and diagrams
+- 🔐 **Azure SSO** with role-based access
+- 💾 **Session persistence** with automatic chat history
+- 📱 **Responsive design** optimized for all screen sizes
+- ⚡ **Performance optimized** with React 18 concurrent features
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm or yarn
-- Python backend with AutoGen Core + FastAPI (optional)
+## Setup & Configuration
 
 ### Installation
+```bash
+cd chat
+npm install
+cp .env.local.example .env.local
+```
 
-1. **Clone the repository**
-   \`\`\`bash
-   git clone <your-repo-url>
-   cd autogen-chat-ui
-   \`\`\`
+### Environment Configuration
+```env
+# Authentication
+AZURE_CLIENT_ID=your-azure-client-id
+AZURE_CLIENT_SECRET=your-azure-client-secret
+AZURE_TENANT_ID=your-azure-tenant-id
+NEXTAUTH_SECRET=your-nextauth-secret
+NEXTAUTH_URL=http://localhost:3000
 
-2. **Install dependencies**
-   \`\`\`bash
-   npm install
-   # or
-   yarn install
-   \`\`\`
+# API Endpoints
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_MCP_URL=http://localhost:8081
 
-3. **Environment Setup**
-   
-   Copy the example environment file:
-   \`\`\`bash
-   cp .env.local.example .env.local
-   \`\`\`
-   
-   Update the environment variables:
-   ```env
-   # Authentication Configuration
-   NEXTAUTH_URL=http://localhost:3000
-   NEXTAUTH_SECRET=your-secret-key-here
-   NODE_ENV=development
-   
-   # Azure AD (Production Only)
-   AUTH_AZURE_AD_CLIENT_ID=your-azure-client-id
-   AUTH_AZURE_AD_CLIENT_SECRET=your-azure-client-secret
-   AUTH_AZURE_AD_TENANT_ID=your-azure-tenant-id
-   
-   # Azure OpenAI Configuration (Required for MCP integration)
-   # When API key is provided, it will be used for authentication
-   # When API key is not provided, Azure AD authentication will be used
-   AZURE_OPENAI_ENDPOINT=https://your-azure-openai-resource.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-azure-openai-api-key
-   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
-   AZURE_OPENAI_API_VERSION=2024-10-21
-   ```
+# Optional: Additional MCP servers
+NEXT_PUBLIC_DENODO_MCP_URL=http://localhost:8082
+```
 
-4. **Start the development server**
-   \`\`\`bash
-   npm run dev
-   # or
-   yarn dev
-   \`\`\`
+### Running the Application
+```bash
+# Development
+npm run dev
 
-5. **Open your browser**
-   
-   Navigate to [http://localhost:3000](http://localhost:3000)
+# Type checking
+npm run type-check
 
-## 🏗️ Project Structure
+# Linting and formatting
+npm run lint && npm run format
 
-\`\`\`
-autogen-chat-ui/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── auth/          # NextAuth.js API routes
-│   │   ├── chat/          # Chat endpoint
-│   │   └── test-backend/  # Backend health check
-│   ├── auth/              # Auth pages
-│   │   ├── signin/        # Custom signin page
-│   │   └── error/         # Auth error page
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Main chat page
-├── components/            # React components
-│   ├── auth/             # Auth components
-│   │   ├── session-provider.tsx
-│   │   ├── sign-in-button.tsx
-│   │   ├── sign-out-button.tsx
-│   │   └── user-menu.tsx
-│   ├── ui/               # shadcn/ui components
-│   ├── artifact-window.tsx
-│   ├── chat-interface.tsx
-│   ├── chart-renderer.tsx
-│   ├── message-bubble.tsx
-│   ├── message-list.tsx
-│   └── sidebar.tsx
-├── lib/                  # Utilities
-│   ├── auth.ts           # NextAuth configuration
-│   ├── artifact-detector.ts
-│   ├── chat-storage.ts
-│   └── utils.ts
-├── types/               # TypeScript definitions
-│   └── next-auth.d.ts   # Auth type extensions
-├── middleware.ts        # Route protection
-├── public/              # Static assets
-├── .env.local          # Environment variables
-├── package.json        # Dependencies
-├── tailwind.config.ts  # Tailwind configuration
-└── README.md          # This file
-\`\`\`
+# Production build
+npm run build && npm start
 
-## 🔧 Configuration
+# Docker
+docker build -t dataflow-chat .
+docker run -p 3000:3000 dataflow-chat
+```
 
-### MCP Integration
+## Architecture
 
-The application uses Model Context Protocol (MCP) for AI capabilities and tool integration. No external backend URL is required.
+### Component Structure
+```
+components/
+├── ui/                        # Base shadcn/ui components
+├── auth/                      # Authentication components
+├── mcp/                       # MCP-specific components
+├── chat-interface.tsx         # Main chat UI
+├── artifacts-panel.tsx        # Code/chart/diagram viewer
+├── message-bubble.tsx         # Individual message display
+├── chart-renderer.tsx         # Recharts integration
+├── markdown-renderer.tsx      # Rich text rendering
+└── settings-dialog.tsx        # User preferences
+```
 
-**MCP Features:**
-- Direct Azure OpenAI integration
-- Tool calling capabilities
-- Resource management
-- Prompt templates
-- Session management
-
-**MCP Configuration:**
-**MCP Configuration:**
-The MCP configuration is defined in `mcp_config.json` and includes:
-- Server definitions and connection settings
-- Available tools and their schemas
-- Resource definitions
-- Prompt templates
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXTAUTH_URL` | Your application URL | `http://localhost:3000` |
-| `NEXTAUTH_SECRET` | Secret key for JWT encryption | Required |
-| `NODE_ENV` | Environment mode | `development` |
-| `AUTH_AZURE_AD_CLIENT_ID` | Azure App Registration Client ID | Production only |
-| `AUTH_AZURE_AD_CLIENT_SECRET` | Azure App Registration Client Secret | Production only |
-| `AUTH_AZURE_AD_TENANT_ID` | Azure Tenant ID | Production only |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI resource endpoint URL | Required |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI API key (if not provided, Azure AD will be used) | Required |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | Azure OpenAI model deployment name | Required |
-| `AZURE_OPENAI_API_VERSION` | Azure OpenAI API version | `2024-10-21` |
-
-## 🔐 Authentication
-
-This application includes Azure Entra ID SSO integration with environment-based configuration:
-
-### Development Mode
-- **SSO is disabled** for easier development
-- Users can bypass authentication with "Continue as Developer" button
-- No Azure configuration required
-
-### Production Mode
-- **Full Azure Entra ID authentication** flow
-- Real user sessions from Azure AD
-- Requires Azure App Registration setup
-
-### Azure App Registration Setup (Production)
-
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to **Azure Active Directory** > **App registrations**
-3. Click **New registration** and configure:
-   - **Name**: Your application name
-   - **Redirect URI**: \`https://yourdomain.com/api/auth/callback/azure-ad\`
-4. Copy the **Application (client) ID**
-5. Create a **client secret** in **Certificates & secrets**
-6. Add API permissions:
-   - Microsoft Graph > Delegated > User.Read
-   - Microsoft Graph > Delegated > profile, email, openid
-
-## 🎨 Customization
-
-### Styling
-
-The project uses Tailwind CSS with a custom color scheme. Modify \`tailwind.config.ts\` to customize:
-
-\`\`\`typescript
-// tailwind.config.ts
-theme: {
-  extend: {
-    colors: {
-      // Customize your color palette
-      primary: "hsl(240 5.9% 10%)",
-      secondary: "hsl(240 4.8% 95.9%)",
-      // ... more colors
-    }
+### Key Hooks
+```typescript
+// Chat management
+const { messages, input, handleSubmit, isLoading } = useChat({
+  api: '/api/chat',
+  onResponse: (response) => {
+    // Handle streaming chunks
   }
-}
-\`\`\`
+});
 
-### Adding New Artifact Types
+// Session persistence
+const { saveSession, loadSession } = useChatStorage();
 
-To support new artifact types, modify \`lib/artifact-detector.ts\`:
+// Mobile optimization
+const isMobile = useMobile();
 
-\`\`\`typescript
-function getArtifactType(language: string): ArtifactContent["type"] {
-  // Add your custom language mappings
-  if (language === "your-custom-type") return "custom"
-  // ... existing logic
-}
-\`\`\`
+// Performance monitoring
+const { performance } = useResizeOptimization();
+```
 
-## 📊 Artifact System
+### State Management
 
-The app automatically detects and displays various types of content:
+The application uses a combination of React hooks and local storage:
+
+#### Chat State
+- **Messages**: Stored in `useChat` hook from Vercel AI SDK
+- **Session persistence**: Auto-saved to localStorage
+- **Artifacts**: Extracted and managed separately from messages
+
+#### Authentication State
+- **User session**: Managed by NextAuth.js
+- **Azure tokens**: Automatically refreshed
+- **Role-based access**: Configured in auth callbacks
+
+## API Integration
+
+### Agent Core Integration
+```typescript
+// Streaming chat with the agent
+const { messages, handleSubmit } = useChat({
+  api: '/api/chat',
+  headers: {
+    'Authorization': `Bearer ${session?.accessToken}`
+  },
+  onResponse: (response) => {
+    // Extract artifacts from response
+    extractArtifacts(response);
+  }
+});
+```
+
+### MCP Server Integration
+```typescript
+// Direct MCP tool calls
+const callMCPTool = async (toolName: string, params: any) => {
+  const response = await fetch('/api/mcp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { name: toolName, arguments: params },
+      id: Date.now()
+    })
+  });
+  return response.json();
+};
+```
+
+## Artifact System
 
 ### Supported Artifact Types
 
-- **Code Blocks** - Python, JavaScript, TypeScript, etc.
-- **Charts** - JSON-based chart configurations
-- **Diagrams** - Mermaid flowcharts and diagrams
-- **Data** - JSON, CSV, XML, YAML files
-
-### Chart Format
-
-Charts should be provided as JSON with this structure:
-
-\`\`\`json
-{
-  "chartType": "bar|line|area|pie",
-  "data": [
-    {"name": "A", "value": 100},
-    {"name": "B", "value": 200}
-  ],
-  "config": {
-    "xAxis": {"dataKey": "name"},
-    "series": [{"dataKey": "value", "fill": "#8884d8"}]
-  }
+#### 1. Code Blocks
+```typescript
+interface CodeArtifact {
+  type: 'code';
+  language: string;
+  code: string;
+  filename?: string;
+  editable?: boolean;
 }
-\`\`\`
+```
 
-## 🧪 Testing
+#### 2. Charts
+```typescript
+interface ChartArtifact {
+  type: 'chart';
+  chartType: 'bar' | 'line' | 'pie' | 'scatter' | 'area';
+  data: any[];
+  xAxis?: string;
+  yAxis?: string;
+  title?: string;
+  config?: RechartsConfig;
+}
+```
 
-### MCP Connection Test
+#### 3. Tables
+```typescript
+interface TableArtifact {
+  type: 'table';
+  columns: Array<{
+    key: string;
+    type: 'string' | 'number' | 'date' | 'boolean';
+    sortable?: boolean;
+    filterable?: boolean;
+  }>;
+  data: any[];
+  title?: string;
+}
+```
 
-Use the built-in debug panel to test your MCP connection:
+#### 4. Mermaid Diagrams
+```typescript
+interface MermaidArtifact {
+  type: 'mermaid';
+  diagram: string;
+  title?: string;
+  config?: MermaidConfig;
+}
+```
 
-1. Navigate to your app
-2. The debug panel will show MCP connection status
-3. Check browser console for detailed logs
+### Artifact Detection
+```typescript
+// Automatic artifact extraction from AI responses
+const extractArtifacts = (content: string): Artifact[] => {
+  const artifacts: Artifact[] = [];
+  
+  // Code blocks
+  const codeBlocks = content.match(/```(\w+)?\n([\s\S]*?)```/g);
+  if (codeBlocks) {
+    codeBlocks.forEach(block => {
+      const [, language, code] = block.match(/```(\w+)?\n([\s\S]*?)```/) || [];
+      artifacts.push({ type: 'code', language, code });
+    });
+  }
+  
+  // JSON data for charts/tables
+  const jsonBlocks = content.match(/```json\n([\s\S]*?)```/g);
+  if (jsonBlocks) {
+    jsonBlocks.forEach(block => {
+      try {
+        const data = JSON.parse(block.replace(/```json\n|```/g, ''));
+        if (data.type === 'chart' || data.type === 'table') {
+          artifacts.push(data);
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    });
+  }
+  
+  return artifacts;
+};
+```
 
-### Manual Testing
+## Performance Optimization
 
-\`\`\`bash
-# Test MCP API endpoint
-curl http://localhost:3000/api/mcp
+### React 18 Features
+- **Concurrent rendering**: Non-blocking UI updates during streaming
+- **Suspense boundaries**: Graceful loading states for components
+- **useTransition**: Smooth transitions between chat states
 
-# Test chat with MCP
-curl -X POST http://localhost:3000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "Hello"}], "session_id": "test", "mcp_enabled": true}'
-\`\`\`
+### Memory Management
+```typescript
+// Efficient message cleanup
+const MAX_MESSAGES = 100;
+const cleanupMessages = (messages: Message[]) => {
+  if (messages.length > MAX_MESSAGES) {
+    return messages.slice(-MAX_MESSAGES);
+  }
+  return messages;
+};
 
-## 🚀 Deployment
+// Debounced auto-save
+const debouncedSave = useMemo(
+  () => debounce(saveSession, 1000),
+  [saveSession]
+);
+```
 
-### Vercel (Recommended)
+### Streaming Optimization
+```typescript
+// High-performance text streaming
+const TypewriterText = ({ text, speed = 50 }: TypewriterProps) => {
+  const [displayText, setDisplayText] = useState('');
+  
+  useEffect(() => {
+    let index = 0;
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayText(text.slice(0, index + 1));
+        index++;
+      } else {
+        clearInterval(timer);
+      }
+    }, speed);
+    
+    return () => clearInterval(timer);
+  }, [text, speed]);
+  
+  return <span>{displayText}</span>;
+};
+```
 
-1. **Push to GitHub**
-   \`\`\`bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   \`\`\`
-
-2. **Deploy to Vercel**
-   - Connect your GitHub repository to Vercel
-   - Set environment variables in Vercel dashboard
-   - Deploy automatically on push
-
-3. **Environment Variables in Vercel**
-   \`\`\`
-   NEXTAUTH_URL=https://your-domain.vercel.app
-   NEXTAUTH_SECRET=your-production-secret
-   AZURE_OPENAI_ENDPOINT=https://your-azure-openai-resource.openai.azure.com/
-   AZURE_OPENAI_API_KEY=your-azure-openai-api-key
-   AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
-   \`\`\`
-
-### Docker
-
-\`\`\`dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-EXPOSE 3000
-CMD ["npm", "start"]
-\`\`\`
-
-\`\`\`bash
-docker build -t agent-chat-mcp .
-docker run -p 3000:3000 \\
-  -e AZURE_OPENAI_ENDPOINT=https://your-azure-openai-resource.openai.azure.com/ \\
-  -e AZURE_OPENAI_API_KEY=your-api-key \\
-  agent-chat-mcp
-\`\`\`
-
-## 🛠️ Development
-
-### Available Scripts
-
-\`\`\`bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
-\`\`\`
+## Development
 
 ### Adding New Components
+1. **Create component** in appropriate directory
+2. **Export from index** for clean imports
+3. **Add Storybook story** for documentation
+4. **Include tests** with React Testing Library
 
-1. Create component in \`components/\`
-2. Export from component file
-3. Import and use in your pages
+### Styling Guidelines
+- **Use CSS variables** for theme consistency
+- **Follow shadcn/ui patterns** for component structure
+- **Responsive first** - mobile-optimized layouts
+- **Dark mode support** - automatic theme detection
 
-### Debugging
+### Testing Strategy
+```bash
+# Unit tests
+npm run test
 
-- Check browser console for client-side logs
-- Check terminal for server-side logs
-- Use the built-in MCP debug panel for connection testing
+# E2E tests  
+npm run test:e2e
 
-## 📝 API Reference
+# Visual regression tests
+npm run test:visual
 
-### Chat API (`/api/chat`)
+# Performance tests
+npm run test:perf
+```
 
-**POST** `/api/chat`
+### Troubleshooting
 
-Request body:
-\`\`\`typescript
-{
-  messages: Array<{
-    role: "user" | "assistant"
-    content: string
-  }>
-  session_id: string
-  mcp_enabled: boolean
-  selected_tools: string[]
-}
-\`\`\`
+**Authentication issues**:
+```bash
+# Check Azure configuration
+curl -X GET http://localhost:3000/api/auth/session
 
-Response: Server-Sent Events stream with MCP tool integration
+# Verify environment variables
+echo $AZURE_CLIENT_ID
+```
 
-### MCP API (\`/api/mcp\`)
+**Streaming issues**:
+- Check network tab for proper SSE connection
+- Verify CORS headers from agent
+- Monitor browser console for errors
 
-**GET** \`/api/mcp\`
+**Build issues**:
+```bash
+# Clear Next.js cache
+rm -rf .next
 
-Returns MCP connection status, available tools, resources, and server information.
+# Check TypeScript compilation
+npm run type-check
 
-**POST** \`/api/mcp\`
-
-Execute MCP actions like tool calls and server management.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (\`git checkout -b feature/amazing-feature\`)
-3. Commit your changes (\`git commit -m 'Add amazing feature'\`)
-4. Push to the branch (\`git push origin feature/amazing-feature\`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
-- **Documentation**: This README and inline code comments
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) - React framework
-- [shadcn/ui](https://ui.shadcn.com/) - UI components
-- [Tailwind CSS](https://tailwindcss.com/) - Styling
-- [Recharts](https://recharts.org/) - Chart library
-- [Mermaid](https://mermaid.js.org/) - Diagram rendering
-- [AutoGen](https://github.com/microsoft/autogen) - AI agent framework
-
----
-
-**Happy coding!** 🚀
-\`\`\`
-
-\`\`\`
-
-I've created a comprehensive README that covers:
-
-## 📋 **What's Included:**
-
-### 🚀 **Quick Start Section**
-- Prerequisites and installation steps
-- Environment setup
-- Development server startup
-
-### 🏗️ **Project Structure**
-- Clear directory layout
-- Component organization
-- File descriptions
-
-### 🔧 **Configuration Guide**
-- Backend integration requirements
-- Environment variables
-- API endpoint specifications
-
-### 🎨 **Customization Options**
-- Styling with Tailwind CSS
-- Adding new artifact types
-- Color scheme modifications
-
-### 📊 **Artifact System Documentation**
-- Supported types (code, charts, diagrams)
-- Chart JSON format specification
-- Examples and usage
-
-### 🧪 **Testing Instructions**
-- Backend connection testing
-- Debug panel usage
-- Manual API testing with curl
-
-### 🚀 **Deployment Options**
-- Vercel deployment (recommended)
-- Docker containerization
-- Environment variable setup
-
-### 🛠️ **Development Guide**
-- Available npm scripts
-- Adding new components
-- Debugging tips
-
-### 📝 **API Reference**
-- Complete endpoint documentation
-- Request/response formats
-- TypeScript interfaces
-
-This README provides everything needed for:
-- **New developers** to get started quickly
-- **Contributors** to understand the codebase
-- **Deployers** to set up production environments
-- **Users** to configure and customize the app
+# Analyze bundle size
+npm run analyze
+```
