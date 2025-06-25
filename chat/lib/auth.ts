@@ -28,7 +28,8 @@ if (!isValid) {
     environment: process.env.NODE_ENV,
   })
   
-  if (!isDevelopment) {
+  // Only throw error at runtime, not during build (when NEXT_PHASE is set)
+  if (!isDevelopment && !process.env.NEXT_PHASE) {
     throw new Error(
       `Azure AD configuration missing. Please set the following environment variables: ${missingVars.join(", ")}`
     )
