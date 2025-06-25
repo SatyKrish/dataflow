@@ -8,8 +8,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY server.py .
-COPY main.py .
+COPY fastmcp_server.py .
+COPY fastmcp_main.py .
 
 # Copy .env file if it exists
 COPY .env* ./
@@ -30,4 +30,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD python -c "import httpx; httpx.get('http://localhost:8080/health', timeout=5)" || exit 1
 
 # Run the FastMCP server
-CMD ["python", "main.py"]
+CMD ["python", "fastmcp_main.py"]

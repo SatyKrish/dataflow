@@ -28,12 +28,6 @@ services:
     volumes:
       - ./logs/demo:/app/logs
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     profiles: ["demo"]
 
   dataflow-denodo-mcp:
@@ -47,16 +41,11 @@ services:
     volumes:
       - ./logs/denodo:/app/logs
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
     profiles: ["denodo"]
 
-# To enable demo or denudo MCP servers, use:
+# To enable MCP servers, use:
 #   docker compose --profile demo up
-#   docker compose --profile denudo up
+#   docker compose --profile denodo up  
 #   docker compose --profile demo --profile denodo up
+#
 # By default, only dataflow-chat will run.
