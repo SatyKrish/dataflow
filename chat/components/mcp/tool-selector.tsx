@@ -229,23 +229,56 @@ export function MCPToolSelector({
                               
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-sm">{tool.name}</span>
+                                  <span className="font-medium text-sm">
+                                    {tool.title || tool.name}
+                                  </span>
+                                  {tool.title && tool.title !== tool.name && (
+                                    <code className="text-xs bg-muted px-1 rounded">{tool.name}</code>
+                                  )}
                                   <Wrench className="h-3 w-3 text-muted-foreground" />
+                                  
+                                  {/* Tool annotations as badges */}
+                                  {tool.annotations?.readOnlyHint && (
+                                    <Badge variant="secondary" className="text-xs">Read-only</Badge>
+                                  )}
+                                  {tool.annotations?.destructiveHint === false && (
+                                    <Badge variant="outline" className="text-xs text-green-600">Safe</Badge>
+                                  )}
+                                  {tool.annotations?.idempotentHint && (
+                                    <Badge variant="outline" className="text-xs text-blue-600">Idempotent</Badge>
+                                  )}
                                 </div>
                                 
                                 <p className="text-xs text-muted-foreground mb-2">
                                   {tool.description}
                                 </p>
                                 
-                                {/* Input Schema Info */}
-                                {tool.inputSchema?.properties && (
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Info className="h-3 w-3" />
-                                    <span>
-                                      Parameters: {Object.keys(tool.inputSchema.properties).join(', ')}
-                                    </span>
-                                  </div>
-                                )}
+                                <div className="space-y-1">
+                                  {/* Input Schema Info */}
+                                  {tool.inputSchema?.properties && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Info className="h-3 w-3" />
+                                      <span>
+                                        Input: {Object.keys(tool.inputSchema.properties).join(', ')}
+                                      </span>
+                                      {tool.inputSchema.required && tool.inputSchema.required.length > 0 && (
+                                        <span className="text-orange-600">
+                                          (required: {tool.inputSchema.required.join(', ')})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Output Schema Info */}
+                                  {tool.outputSchema?.properties && (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Info className="h-3 w-3" />
+                                      <span>
+                                        Output: {Object.keys(tool.outputSchema.properties).join(', ')}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           )

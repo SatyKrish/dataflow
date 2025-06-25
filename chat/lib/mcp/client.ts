@@ -13,7 +13,10 @@ import {
   MCPPrompt, 
   MCPClientStatus,
   MCPToolCall,
-  MCPToolResult
+  MCPToolResult,
+  MCPListToolsResult,
+  MCPListResourcesResult,
+  MCPListPromptsResult
 } from './types';
 import { mcpConfigManager } from './config';
 
@@ -220,6 +223,17 @@ export class MCPClientManager {
 
         console.log(`✅ Connected to MCP server: ${serverName}`);
         console.log(`   Tools: ${status.tools.length}`);
+        if (status.tools.length > 0) {
+          status.tools.forEach(tool => {
+            const features = [];
+            if (tool.title) features.push('title');
+            if (tool.outputSchema) features.push('outputSchema');
+            if (tool.annotations) features.push('annotations');
+            if (features.length > 0) {
+              console.log(`     ${tool.name}: ${features.join(', ')}`);
+            }
+          });
+        }
         console.log(`   Resources: ${status.resources.length}`);
         console.log(`   Prompts: ${status.prompts.length}`);
 
@@ -285,37 +299,19 @@ export class MCPClientManager {
         client.listPrompts()
       ]);
 
+      // Use SDK types directly - preserve all fields including title, outputSchema, annotations
       const tools: MCPTool[] = toolsResult.status === 'fulfilled' 
-        ? (toolsResult.value.tools || []).map((tool: any) => ({
-            name: tool.name,
-            description: tool.description,
-            inputSchema: {
-              type: 'object' as const,
-              properties: tool.inputSchema?.properties || {},
-              required: tool.inputSchema?.required
-            }
-          }))
+        ? toolsResult.value.tools || []
         : [];
 
+      // Use SDK types directly - preserve all fields including mimeType, description
       const resources: MCPResource[] = resourcesResult.status === 'fulfilled'
-        ? (resourcesResult.value.resources || []).map((resource: any) => ({
-            uri: resource.uri,
-            name: resource.name,
-            description: resource.description,
-            mimeType: resource.mimeType
-          }))
+        ? resourcesResult.value.resources || []
         : [];
 
+      // Use SDK types directly - preserve all fields including arguments
       const prompts: MCPPrompt[] = promptsResult.status === 'fulfilled'
-        ? (promptsResult.value.prompts || []).map((prompt: any) => ({
-            name: prompt.name,
-            description: prompt.description,
-            arguments: prompt.arguments?.map((arg: any) => ({
-              name: arg.name,
-              description: arg.description,
-              required: arg.required
-            }))
-          }))
+        ? promptsResult.value.prompts || []
         : [];
 
       return {
@@ -360,7 +356,7 @@ export class MCPClientManager {
       console.log(`🔧 Executing tool: ${toolName} on server: ${serverName}`);
       console.log(`   Arguments:`, args);
 
-      // Execute the tool
+      // Execute the tool using SDK method
       const result = await client.callTool({
         name: toolName,
         arguments: args
@@ -368,10 +364,13 @@ export class MCPClientManager {
 
       console.log(`✅ Tool execution completed: ${toolName}`);
       
+      // Return the SDK result, ensuring it conforms to our interface
       return {
-        content: Array.isArray(result.content) ? result.content : [{ type: 'text', text: JSON.stringify(result.content) }],
-        isError: Boolean(result.isError)
-      };
+        content: result.content || [],
+        isError: result.isError ?? false,
+        structuredContent: result.structuredContent,
+        _meta: result._meta
+      } as MCPToolResult;
 
     } catch (error) {
       console.error(`❌ Tool execution failed: ${toolIdentifier}`, error);
@@ -381,7 +380,7 @@ export class MCPClientManager {
           text: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`
         }],
         isError: true
-      };
+      } as MCPToolResult;
     }
   }
 
