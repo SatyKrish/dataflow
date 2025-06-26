@@ -151,20 +151,30 @@ export async function POST(req: NextRequest) {
               const result = await mcpClientManager.executeTool(mcpTool.name, args);
               
               // Validate result structure
-              if (!result || !Array.isArray(result.content)) {
-                console.warn(`Tool ${mcpTool.name} returned invalid result structure:`, result);
-                return 'Tool execution completed but returned invalid result structure';
+              if (!result) {
+                console.warn(`Tool ${mcpTool.name} returned null result`);
+                return 'Tool execution completed but returned no result';
               }
               
               console.log(`✅ Tool ${mcpTool.name} result:`, result);
               
-              // Simple: just extract and return the text content
-              const textContent = result.content
-                .filter(c => c.text && c.text.trim()) 
-                .map(c => c.text)
-                .join('\n');
-                
-              return textContent || 'Tool execution completed';
+              // Handle structured content if available (new SDK feature)
+              if (result.structuredContent) {
+                console.log(`📊 Tool ${mcpTool.name} returned structured content:`, result.structuredContent);
+                return JSON.stringify(result.structuredContent, null, 2);
+              }
+              
+              // Handle content array
+              if (Array.isArray(result.content) && result.content.length > 0) {
+                const textContent = result.content
+                  .filter((c: any) => c.text && typeof c.text === 'string' && c.text.trim()) 
+                  .map((c: any) => c.text)
+                  .join('\n');
+                  
+                return textContent || 'Tool execution completed';
+              }
+              
+              return 'Tool execution completed';
             } catch (error) {
               console.error(`Tool execution error for ${mcpTool.name}:`, error);
               console.error(`Error stack:`, error instanceof Error ? error.stack : 'No stack');

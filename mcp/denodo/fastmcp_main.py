@@ -52,7 +52,7 @@ def main():
     
     # Import the FastMCP server
     try:
-        from server import mcp, logger
+        from fastmcp_server import mcp, logger
         
         logger.info(f"Starting Denodo FastMCP Server on {args.host}:{args.port}")
         logger.info(f"Transport: {args.transport}")

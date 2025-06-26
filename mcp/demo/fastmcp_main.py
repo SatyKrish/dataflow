@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 """
-Denodo FastMCP Server Entry Point
+Demo FastMCP Server Entry Point
 
-Main entry point for the FastMCP-based Denodo server with command line argument support.
+Main entry point for the FastMCP-based demo server with command line argument support.
 
 Usage:
     python fastmcp_main.py [--port PORT] [--host HOST] [--transport TRANSPORT]
+
+Environment Variables:
+    AZURE_OPENAI_API_KEY: The Azure OpenAI API key for generating responses
+    AZURE_OPENAI_ENDPOINT: The Azure OpenAI endpoint URL
+    AZURE_OPENAI_DEPLOYMENT: The Azure OpenAI deployment name to use
+    AZURE_OPENAI_API_VERSION: The Azure OpenAI API version to use
+    MCP_SERVER_PORT: Port to run the server on (default: 8080)
+    MCP_SERVER_HOST: Host to bind the server to (default: 0.0.0.0)
 """
 
 import os
@@ -18,8 +26,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 def main():
-    """Main entry point for the FastMCP Denodo server"""
-    parser = argparse.ArgumentParser(description="Denodo FastMCP Server")
+    """Main entry point for the FastMCP demo server"""
+    parser = argparse.ArgumentParser(description="Demo FastMCP Server")
     parser.add_argument(
         "--host", 
         default=os.getenv("MCP_SERVER_HOST", "0.0.0.0"),
@@ -52,9 +60,9 @@ def main():
     
     # Import the FastMCP server
     try:
-        from server import mcp, logger
+        from fastmcp_server import mcp, logger
         
-        logger.info(f"Starting Denodo FastMCP Server on {args.host}:{args.port}")
+        logger.info(f"Starting Demo FastMCP Server on {args.host}:{args.port}")
         logger.info(f"Transport: {args.transport}")
         logger.info(f"MCP endpoint: http://{args.host}:{args.port}/mcp")
         
