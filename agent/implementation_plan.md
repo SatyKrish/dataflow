@@ -7,49 +7,53 @@
 - **FastMCP** for agent orchestration (multi-agent coordination, tool calls, persona/entitlement subagents)
 - **Azure OpenAI** as the LLM backend for all agent reasoning and generation
 
-**Key integration points:**
-- Define agent logic and subagent workflows as Langraph graphs (nodes for subagents, tools, memory, etc.) 
-- Use FastMCP to expose orchestrator and subagent tools, and to coordinate multi-agent workflows
+**MVP Key integration points:**
+- **Single MCP server** under `/mcp/agent/` exposed to chat interface for clean architecture
+- Internal subagent components coordinate via Langraph graphs within the main MCP server
+- Use FastMCP client connections to call existing external MCP tools (denodo/, demo/)
 - Use Azure OpenAI API for all LLM calls (via Langraph or FastMCP tool wrappers)
-- (Optional) Use Langraph's streaming and trace APIs to stream chain-of-thought to frontend
+- **PostgreSQL** as primary data store with schema files under `/data/` folder
+- **Redis** as cache layer for active session coordination and real-time agent status
+- Focus on reliable metadata discovery and data retrieval across multiple sources via existing MCP tools
+- Use Langraph's streaming and trace APIs for basic observability and debugging
 
 ---
 
-## 1. System Overview
-- **Goal:** Enable users to use natural language for data/metadata queries, analysis, and research, with dynamic agent orchestration and entitlement checks.
-- **Key Features:**
+## 1. System Overview (MVP)
+- **Goal:** Enable users to use natural language for data/metadata queries across multiple data sources with intelligent agent orchestration.
+- **MVP Features:**
   - Multi-agent orchestration (lead agent + subagents) using FastMCP
-  - Dynamic persona/intent detection
+  - Metadata discovery and data retrieval from multiple sources
   - On-demand entitlement checks
-  - Data/metadata retrieval from multiple sources
-  - Conversation storage and personality profiling
-  - Scalable, production-ready, and observable
+  - Parallel subagent execution for efficiency
+  - Basic conversation storage and session management
+  - Observable and reliable multi-agent coordination
 
 ---
 
 ## 2. High-Level Architecture (Enhanced with Anthropic's Multi-Agent Pattern)
 
-### 2.1 Orchestrator-Worker Pattern (Lead Agent + Specialized Subagents)
+### 2.1 Orchestrator-Worker Pattern (Single MCP Server Architecture)
 
-- **Orchestrator MCP Server (Lead Agent):**
-  - Implemented as a FastMCP server (e.g., `/agent/orchestrator/fastmcp_server.py`)
+- **Main Agent MCP Server (Orchestrator):**
+  - Implemented as a FastMCP server under `/mcp/agent/` (following existing structure with demo/ and denodo/)
+  - **Only MCP server exposed to chat interface** - provides single point of interaction
   - Exposes a `multi_agent_research` tool and supporting tools via FastMCP protocol
   - **Research Planning:** Analyzes user query, develops strategy, saves plan to persistent memory
-  - **Task Decomposition:** Breaks down complex queries into specific, bounded subtasks for subagents
-  - **Parallel Coordination:** Spawns specialized subagents simultaneously with separate context windows
+  - **Task Decomposition:** Breaks down complex queries into specific, bounded subtasks for internal subagents
+  - **Parallel Coordination:** Spawns specialized subagents as internal components with separate context windows
   - **Iterative Research:** Evaluates subagent results and determines if additional research rounds are needed
   - **Synthesis & Aggregation:** Combines and analyzes findings from all subagents for final response
 
-- **Specialized Subagents (as FastMCP Tools):**
-  - **MetadataAgent:** Explores data schemas, table structures, and semantic relationships
+- **Internal Specialized Subagents (Components, not MCP servers):**
+  - **MetadataAgent:** Explores data schemas, table structures, and semantic relationships across data sources
   - **EntitlementAgent:** Validates user permissions and data access rights
   - **DataAgent:** Retrieves and processes actual data based on metadata findings
   - **AggregationAgent:** Synthesizes results from multiple data sources and subagents
-  - **CitationAgent:** Post-processes results to add source attributions and citations
-  - Each subagent operates with:
+  - Each subagent operates as internal components within the main MCP server:
     - Clear objectives and output format specifications
     - Dedicated context windows for parallel exploration
-    - Specialized tool access and domain expertise
+    - Access to existing MCP tools (denodo/, demo/, etc.) via internal clients
     - Independent reasoning and tool execution capabilities
 
 ### 2.2 Dynamic Multi-Step Search vs Static RAG
@@ -61,58 +65,156 @@
   - Continuously refines search strategy based on discoveries
   - Operates across multiple independent context windows simultaneously
 
-### 2.3 Context and Memory Architecture
-- **External Memory Systems:** 
-  - Persistent storage for research plans, intermediate results, and conversation history
-  - Separate from conversation context to prevent token overflow
-  - Enables resumption from checkpoints without losing research progress
-- **Artifact Storage:**
-  - Direct subagent output to filesystem/database to minimize information loss
-  - Structured outputs (reports, data, visualizations) stored independently
-  - Lightweight references passed between agents instead of full content
-- **Context Compression:**
-  - Intelligent summarization when approaching context limits
-  - Work phase completion summaries before proceeding to new tasks
-  - Fresh subagent spawning with clean contexts while maintaining continuity
+### 2.3 Context and Memory Architecture (Postgres-Backed)
 
-### 2.4 Supporting Components
-- **Persona/Intent Profiler:** Analyzes user queries and history to optimize research strategy and subagent selection
+#### 2.3.1 Primary Data Store: PostgreSQL
+
+**Why PostgreSQL for Multi-Agent Orchestration:**
+- **ACID transactions** ensure data consistency when multiple agents update session state simultaneously
+- **Strong consistency** prevents race conditions in multi-agent coordination
+- **SQL analytical functions** for session analysis and performance optimization
+- **JSONB support** for flexible session memory and subagent result storage
+- **Mature ecosystem** with excellent monitoring, backup/recovery, and scaling capabilities
+- **Performance optimization** with specialized indexes for complex queries
+
+#### 2.3.2 MVP Database Schema Design
+```sql
+-- Basic user management for MVP
+users (
+  user_id UUID PRIMARY KEY,
+  email VARCHAR(255),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Research sessions for multi-agent orchestration
+research_sessions (
+  session_id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(user_id),
+  initial_query TEXT,
+  research_plan JSONB,
+  final_outcome JSONB,
+  token_usage INTEGER,
+  session_duration INTERVAL,
+  status VARCHAR(50), -- 'active', 'completed', 'failed'
+  created_at TIMESTAMP
+);
+
+-- Subagent execution tracking
+subagent_executions (
+  execution_id UUID PRIMARY KEY,
+  session_id UUID REFERENCES research_sessions(session_id),
+  agent_type VARCHAR(50), -- 'metadata', 'entitlement', 'data', 'aggregation'
+  task_description TEXT,
+  tool_calls JSONB,
+  results JSONB,
+  status VARCHAR(50), -- 'running', 'completed', 'failed'
+  execution_time_ms INTEGER,
+  created_at TIMESTAMP
+);
+
+-- Session memory for context management
+session_memory (
+  memory_id UUID PRIMARY KEY,
+  session_id UUID REFERENCES research_sessions(session_id),
+  memory_type VARCHAR(50), -- 'research_plan', 'intermediate_results', 'context_summary'
+  content JSONB,
+  created_at TIMESTAMP,
+  expires_at TIMESTAMP
+);
+```
+
+**Example MVP Queries:**
+```sql
+-- Track session success and token usage patterns
+SELECT 
+    agent_type,
+    AVG(execution_time_ms) as avg_execution_time,
+    COUNT(*) as total_executions,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as successful_executions
+FROM subagent_executions 
+WHERE created_at > NOW() - INTERVAL '7 days'
+GROUP BY agent_type;
+
+-- Session analysis for multi-agent optimization
+SELECT 
+    rs.session_id,
+    rs.token_usage,
+    rs.session_duration,
+    COUNT(se.execution_id) as total_subagents,
+    STRING_AGG(se.agent_type, ',') as agents_used
+FROM research_sessions rs
+LEFT JOIN subagent_executions se ON rs.session_id = se.session_id
+WHERE rs.status = 'completed'
+GROUP BY rs.session_id, rs.token_usage, rs.session_duration;
+
+-- Find failed subagent patterns for debugging
+SELECT agent_type, tool_calls, COUNT(*) as failure_count
+FROM subagent_executions 
+WHERE status = 'failed' 
+  AND created_at > NOW() - INTERVAL '24 hours'
+GROUP BY agent_type, tool_calls
+ORDER BY failure_count DESC;
+```
+
+#### 2.3.3 Database Artifacts Organization
+- **Database artifacts under `/data/` folder:**
+  - SQL schema definitions and migrations
+  - Database initialization scripts
+  - Seed data and test fixtures
+  - Backup and recovery scripts
+  
+#### 2.3.4 Complementary Storage Systems
+- **Redis Cache Layer:**
+  - Session-level memory for active research processes
+  - Entitlement check caching to avoid redundant API calls
+  - Real-time agent coordination and status tracking
+  
+- **File System/Object Storage:**
+  - Large artifact storage (reports, visualizations, datasets)
+  - Subagent output files with Postgres storing lightweight references
+  - Binary data and media files generated during research
+
+### 2.4 Supporting Components (MVP)
+- **Session Management:** Tracks research sessions, subagent execution, and basic user interaction patterns
 - **Health Monitoring:** Tracks agent performance, success rates, and system reliability
-- **Evaluation Systems:** End-state outcome assessment and LLM-as-judge quality control
+- **Basic Observability:** Session tracking, token usage monitoring, and error logging for debugging
 
 ---
 
 ## 3. Implementation Steps (with FastMCP)
 
-### A. Orchestrator MCP Server (Lead Agent)
-- Scaffold a FastMCP server (`fastmcp_server.py`) in `/mcp/orchestrator`.
+### A. Main Agent MCP Server (Single Exposed Server)
+- Scaffold a FastMCP server under `/mcp/agent/` (following existing demo/, denodo/ structure).
+- **Only MCP server exposed to chat interface** - single point of interaction
 - Expose a `multi_agent_research` tool:
   - Accepts user query and session info.
-  - Analyzes intent/persona (calls persona profiler tool or uses LLM prompt).
-  - Decomposes query into subtasks.
-  - Calls subagent tools (can be local or remote MCP tools) using FastMCP client.
+  - Analyzes intent using internal query analysis components.
+  - Decomposes query into subtasks for internal subagents.
+  - Coordinates internal subagents and calls external MCP tools (denodo/, demo/) as needed.
   - Aggregates results and returns structured response.
 - Add a `health_check` tool for monitoring.
 
-### B. Subagent Design (as FastMCP Tools)
-- **MetadataAgent:** Calls Denodo MCP server's `denodo_query` tool with `mode=metadata`.
-- **EntitlementAgent:** Calls an entitlement-check tool (could be a new MCP server/tool).
-- **DataAgent:** Calls Denodo MCP server's `denodo_query` tool with `mode=data`.
-- **AggregationAgent:** Aggregates results from other subagents (could be a tool or inline logic).
-- Each subagent tool should:
-  - Receive a clear objective and output format.
-  - Use FastMCP client to call other tools as needed.
-  - Return structured results and reasoning.
+### B. Internal Subagent Design (Components within Main MCP Server)
+- **MetadataAgent:** Internal component that calls existing Denodo MCP server's `denodo_query` tool with `mode=metadata`.
+- **EntitlementAgent:** Internal component for entitlement checks (may call external services).
+- **DataAgent:** Internal component that calls existing Denodo MCP server's `denodo_query` tool with `mode=data`.
+- **AggregationAgent:** Internal component that aggregates results from other subagents.
+- Each internal subagent component should:
+  - Operate within the main MCP server process.
+  - Use MCP client connections to call existing external MCP tools as needed.
+  - Return structured results for orchestrator coordination.
 
 ### C. Tooling & Integration
 - Use FastMCP client to call tools on other MCP servers (Demo, Denodo, Entitlement, etc.).
 - Add new MCP tools as needed for new data sources or entitlement checks.
 
-### D. Persona/Intent Detection (Detailed)
-- Implement as a FastMCP tool (e.g., `detect_persona`).
-- Use LLM-based classification or prompt engineering to infer persona (developer, analyst, etc.) and intent from query and history.
-- Store/update persona profile per user/session in memory or DB.
-- Orchestrator calls this tool at the start of each research session.
+### D. Basic Query Analysis (MVP)
+- **Simple Intent Detection:**
+  - Implement as FastMCP tool: `analyze_query_intent`
+  - Classify queries as: metadata exploration, data retrieval, cross-source analysis
+  - Determine appropriate subagent allocation based on query type
+  - Store basic query patterns in session for debugging and optimization
 
 ### E. Entitlement Check Integration (Detailed)
 - Implement as a FastMCP tool (e.g., `check_entitlement`).
@@ -126,28 +228,49 @@
 - Aggregate results, handle errors, and retry as needed.
 - Iterate if more research is needed (e.g., if subagent results indicate missing info).
 
-### G. Memory & Context Management (Enhanced with Anthropic Insights)
-- **External memory systems:** Store plan, subagent outputs, and conversation history in persistent memory (DB, Redis, or file) separate from conversation context
-- **Context compression strategies:** 
-  - Summarize completed work phases before proceeding to new tasks
-  - Compress context when approaching 200K token limits to retain essential information
-  - Use intelligent summarization to preserve key research findings and methodology
-- **Artifact-based output storage:**
-  - Implement filesystem/database storage for subagent structured outputs (reports, data, visualizations)
-  - Store lightweight references in conversation context instead of full outputs
-  - Enable direct subagent-to-storage workflows to minimize information loss through "telephone game"
-- **Memory retrieval patterns:**
-  - Retrieve stored context and research plans when resuming from checkpoints
-  - Update memory incrementally as orchestrator and subagents complete tasks
-  - Use semantic search or structured queries to retrieve relevant historical context
-- **Long-horizon conversation support:**
-  - Spawn fresh subagents with clean contexts while maintaining continuity through memory handoffs
-  - Implement conversation coherence across context window boundaries
-  - Store intermediate results separately from conversation flow for later aggregation
+### G. Memory & Context Management (Postgres + Redis Architecture)
+- **PostgreSQL for Persistent Memory:**
+  - Store research plans, session outcomes, and compressed context in `agent_memory` table
+  - Use JSONB for flexible memory content storage with automatic expiration policies
+  - Enable complex queries across historical research patterns for profile learning
+  - Implement incremental updates with database transactions for consistency
+  
+- **Redis for Active Session Memory:**
+  - Cache current research session state and subagent coordination data
+  - Store real-time agent status and intermediate results for fast access
+  - Implement session-level memory with TTL expiration for automatic cleanup
+  - Enable pub/sub patterns for real-time agent coordination and progress updates
+  
+- **Context Compression Strategies:** 
+  - Store full context in Postgres `agent_memory` before compression
+  - Use intelligent summarization with compression levels tracked in database
+  - Preserve key research findings and methodology in structured JSONB format
+  - Implement context retrieval queries that reconstruct essential information
+  
+- **Artifact-based Output Storage:**
+  - Store large outputs (reports, visualizations) in filesystem/object storage
+  - Store metadata and lightweight references in `subagent_executions` table
+  - Enable direct subagent-to-Postgres workflows with file system references
+  - Track artifact relationships and dependencies in relational structure
+  
+- **Memory Retrieval Patterns:**
+  - Use PostgreSQL full-text search and JSONB queries for context retrieval
+  - Implement semantic similarity searches on research plans and outcomes
+  - Enable cross-session pattern matching for user preference learning
+  - Support checkpoint resumption through database transaction rollback/recovery
 
-### H. Conversation Storage & Profiling
-- Store all conversations and subagent actions for future reference and personality building.
-- Use this data to improve intent detection and user experience.
+### H. Session Storage & Basic Analytics (MVP)
+- **Session Data Collection:**
+  - Store research sessions in `research_sessions` table with basic audit trail
+  - Track subagent executions with performance metrics for debugging
+  - Record session outcomes and token usage for optimization
+  - Implement basic data retention policies
+  
+- **Simple Analytics:**
+  - Track successful vs failed sessions for system reliability
+  - Monitor subagent performance patterns for optimization
+  - Identify common failure modes for debugging
+  - Basic token usage analysis for cost optimization
 
 ### I. Citation/Attribution
 - After aggregation, run a citation agent/tool to attribute results to sources (tool outputs, data sources, etc.).
@@ -276,11 +399,15 @@ This section provides actionable guidance for using Langraph to orchestrate suba
 - **Avoid vague instructions:** Replace simple instructions like "research semiconductor shortage" with specific, bounded tasks
 - **Division of labor:** Ensure subagents explore different aspects (e.g., one explores 2021 automotive crisis, another investigates current 2025 supply chains)
 
-### 5.3 Effort Scaling Rules
-- **Simple fact-finding:** 1 agent with 3-10 tool calls
-- **Direct comparisons:** 2-4 subagents with 10-15 calls each  
-- **Complex research:** 10+ subagents with clearly divided responsibilities
+### 5.3 Effort Scaling Rules (MVP)
+- **Simple fact-finding:** 1-2 agents (MetadataAgent → DataAgent) with 3-10 tool calls
+- **Cross-source queries:** 2-3 subagents (MetadataAgent, EntitlementAgent, DataAgent) with 10-15 calls each  
+- **Complex analysis:** 3-4 subagents with AggregationAgent for synthesis
 - **Embed scaling rules in prompts:** Prevent overinvestment in simple queries through explicit guidelines
+- **Query-type based scaling:** Use basic intent detection to determine agent allocation
+  - **Metadata exploration:** Start with MetadataAgent only
+  - **Data retrieval:** MetadataAgent → EntitlementAgent → DataAgent pipeline
+  - **Cross-source analysis:** Parallel MetadataAgents → EntitlementAgent → DataAgent → AggregationAgent
 
 ### 5.4 Tool Design as Agent-Computer Interface
 - **Tool interfaces are critical:** Agent-tool interfaces are as important as human-computer interfaces
@@ -363,13 +490,13 @@ This section provides actionable guidance for using Langraph to orchestrate suba
 - **Source quality heuristics:** Address preference for SEO-optimized content over authoritative sources
 - **Manual testing value:** Essential even with automated evaluations for edge case discovery
 
-## 9. Best Practices (Updated with Anthropic Insights)
+## 9. Best Practices (MVP Focus with Anthropic Insights)
 - Use orchestrator-worker (lead agent + subagents) pattern with FastMCP tools
 - Parallelize subagent execution for speed and coverage with separate context windows
 - Use explicit, detailed prompts with clear objectives, output formats, and boundaries
-- Scale agent effort to query complexity with embedded guidelines
+- Scale agent effort to query complexity with embedded guidelines (1-4 agents for MVP)
 - Prefer specialized tools over generic ones as agent-computer interfaces
-- Start with broad queries, then narrow down through iterative refinement
+- Start with metadata discovery, then narrow down to specific data retrieval
 - Guide agent thinking with planning and scratchpad steps
 - Store intermediate results in external memory/artifacts, not just conversation context
 - Evaluate agent outcomes (end-state) not just process (turn-by-turn)
@@ -378,34 +505,38 @@ This section provides actionable guidance for using Langraph to orchestrate suba
 - Implement stateful error handling with checkpoints and graceful degradation
 - Build agent simulations for prompt engineering and failure mode identification
 - Design for token economics with clear value justification for increased usage
+- Focus on reliable multi-agent coordination before adding advanced personalization features
 
 ---
 
 ## 10. Implementation Priorities (Based on Anthropic's Production Experience)
 
-### Phase 1: Core Multi-Agent Foundation
-1. **Build agent simulation environment** for prompt engineering and failure mode identification
-2. **Scaffold orchestrator FastMCP server** with basic multi-agent coordination
-3. **Implement external memory systems** for persistent research plans and context storage
-4. **Create artifact storage infrastructure** for direct subagent outputs
+### Phase 1: Core Multi-Agent Foundation (MVP)
+1. **Set up PostgreSQL + Redis data architecture** with schema files under `/data/` folder
+2. **Create main agent MCP server** under `/mcp/agent/` (single server exposed to chat interface)
+3. **Build agent simulation environment** for prompt engineering and failure mode identification
+4. **Implement internal subagent components** (MetadataAgent, EntitlementAgent, DataAgent, AggregationAgent)
+5. **Add MCP client connections** to existing external MCP servers (denodo/, demo/)
+6. **Implement multi-agent orchestration** with parallel internal subagent execution and result aggregation
+7. **Add basic session storage and analytics** for debugging and optimization
 
-### Phase 2: Specialized Subagents and Tool Design
-5. **Develop specialized subagent tools** (MetadataAgent, EntitlementAgent, DataAgent) with clear contracts
-6. **Implement detailed task decomposition** with explicit boundaries and output formats
-7. **Add effort scaling rules** embedded in orchestrator prompts
-8. **Create domain-specific tools** rather than generic search interfaces
+### Phase 2: Advanced Features and Personality Profiling
+8. **Implement persistent personality profiling** with comprehensive user behavior analysis
+9. **Add profile-driven agent optimization** and personalized research strategies
+10. **Enhance detailed task decomposition** with user preference-based boundaries and formats
+11. **Create advanced analytics** for cross-session pattern analysis and user evolution tracking
 
 ### Phase 3: Production Reliability
-9. **Implement stateful error handling** with checkpoints and graceful degradation
-10. **Add comprehensive tracing and observability** for agent decision pattern monitoring  
-11. **Build evaluation systems** with end-state assessment and LLM-as-judge quality control
-12. **Develop rainbow deployment strategy** for stateful agent system updates
+10. **Implement stateful error handling** with database-backed checkpoints and graceful degradation
+11. **Add comprehensive tracing and observability** for agent decision pattern monitoring using Postgres analytics
+12. **Build evaluation systems** with end-state assessment and LLM-as-judge quality control stored in database
+13. **Develop rainbow deployment strategy** for stateful agent system updates with database migrations
 
 ### Phase 4: Advanced Features and Optimization
-13. **Enhance frontend** for multi-agent progress visibility and chain-of-thought streaming
-14. **Implement token usage optimization** and cost monitoring for economic viability
-15. **Add human evaluation workflows** to catch edge cases and biases
-16. **Plan for asynchronous execution** to eliminate bottlenecks in future iterations
+14. **Enhance frontend** for multi-agent progress visibility and chain-of-thought streaming from database
+15. **Implement token usage optimization** and cost monitoring using historical Postgres data analysis
+16. **Add human evaluation workflows** to catch edge cases and biases with feedback stored in database
+17. **Plan for asynchronous execution** to eliminate bottlenecks with Redis pub/sub coordination
 
 ## 11. Success Metrics and Validation
 
@@ -423,25 +554,25 @@ This section provides actionable guidance for using Langraph to orchestrate suba
 
 ## 12. Next Steps
 
-### Immediate Actions (Week 1-2)
-1. Set up agent simulation environment using Console with exact prompts and tools
-2. Start with simple orchestrator FastMCP server and basic subagent coordination
-3. Implement external memory storage for research plans and context persistence
-4. Create initial prompt templates with detailed task descriptions and effort scaling rules
+### Immediate Actions (Week 1-2) - MVP Focus
+1. Create `/data/` folder with PostgreSQL schema definitions and setup scripts
+2. Set up PostgreSQL + Redis with basic session and subagent execution tables
+3. Create main agent MCP server under `/mcp/agent/` (single server exposed to chat)
+4. Build agent simulation environment using Console with exact prompts and tools
 
-### Short-term Goals (Month 1)
-5. Deploy specialized subagent tools with clear input/output contracts
-6. Add comprehensive logging and tracing for agent decision patterns
-7. Implement basic evaluation with LLM-as-judge for output quality assessment
-8. Begin human evaluation processes to identify edge cases and failure modes
+### Short-term Goals (Month 1) - Core Multi-Agent Functionality
+5. Implement internal subagent components (MetadataAgent, EntitlementAgent, DataAgent, AggregationAgent)
+6. Add MCP client connections to existing external MCP servers (denodo/, demo/)
+7. Implement parallel internal subagent execution with proper session tracking
+8. Add comprehensive logging and observability for debugging agent coordination
 
-### Medium-term Objectives (Months 2-3)
-9. Scale system for production reliability with stateful error handling
-10. Optimize token usage and implement cost monitoring for economic viability
-11. Enhance frontend with multi-agent progress visibility and chain-of-thought streaming
-12. Plan transition to asynchronous execution model for eliminating bottlenecks
+### Medium-term Objectives (Months 2-3) - Production Readiness
+9. Implement stateful error handling with database-backed checkpoints
+10. Add basic evaluation and quality control mechanisms
+11. Optimize token usage and implement cost monitoring
+12. **Begin Phase 2: Add persistent personality profiling and advanced personalization**
 
-*Remember: Multi-agent systems burn through tokens 15× faster than chat, so ensure tasks justify the increased performance and cost.*
+*MVP Focus: Get reliable multi-agent orchestration working before adding complex personalization features.*
 
 ---
 
