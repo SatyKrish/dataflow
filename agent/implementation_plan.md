@@ -137,9 +137,89 @@
 - Frontend should provide a toggle to show/hide live agent traces for transparency and debugging.
 - Store CoT traces with conversation history for future review and debugging.
 
+### M. Observability and End-to-End Tracing with OpenTelemetry
+
+- Integrate OpenTelemetry into all components (orchestrator, subagents, FastMCP, and Langraph nodes) to enable distributed tracing and metrics collection.
+- Ensure that each request is assigned a unique trace context that is propagated across all subagent/tool calls and workflow steps.
+- Instrument Langraph nodes and FastMCP tool invocations to emit OpenTelemetry spans, capturing timing, status, and relevant metadata for each step.
+- Export traces to a centralized backend (e.g., Jaeger, Zipkin, Azure Monitor) for end-to-end visibility and troubleshooting.
+- Use OpenTelemetry to correlate frontend user actions with backend agent/subagent execution for full request lifecycle observability.
+- Make OpenTelemetry tracing a non-optional requirement for all new agent and tool implementations.
+
 ---
 
-## 4. Best Practices (from Anthropic and DataFlow)
+## 4. Langraph-Based Orchestration of Subagents
+
+Langraph is responsible for defining and executing the orchestration logic between subagents as a directed graph. The following steps detail how to implement this:
+
+1. **Define the Orchestration Graph:**
+   - Model the overall research workflow as a Langraph graph.
+   - Each node in the graph represents a subagent/tool (e.g., MetadataAgent, EntitlementAgent, DataAgent, AggregationAgent).
+   - Edges define the flow of data and control between nodes.
+
+2. **Node Implementation:**
+   - Each subagent/tool is implemented as a Langraph node with a clear input/output contract.
+   - Nodes can be:
+     - Synchronous (wait for result before proceeding)
+     - Asynchronous/parallel (multiple nodes can execute in parallel if their dependencies are satisfied)
+
+3. **Parallel Execution:**
+   - Use Langraph’s parallel execution features to run independent subagents (e.g., MetadataAgent and EntitlementAgent) concurrently.
+   - The orchestrator node triggers parallel execution by connecting multiple downstream nodes to a single upstream node.
+
+4. **Aggregation and Synchronization:**
+   - Use an AggregationAgent node to collect and combine results from multiple subagents.
+   - The AggregationAgent node should wait for all required inputs before executing.
+
+5. **Error Handling:**
+   - Define error-handling logic in the graph (e.g., retry nodes, fallback nodes, or error aggregation nodes).
+   - Langraph supports conditional edges to handle different execution paths based on node outputs.
+
+6. **Dynamic Graph Construction:**
+   - For complex queries, dynamically construct the Langraph graph at runtime based on the user’s intent and required subtasks.
+   - Use persona/intent detection results to determine which subagents/nodes to include in the graph.
+
+7. **Memory and Context Passing:**
+   - Use Langraph’s context-passing features to share memory, intermediate results, and conversation history between nodes.
+   - Ensure that each node receives the necessary context to perform its task.
+
+8. **Chain-of-Thought Tracing:**
+   - Enable Langraph’s trace/streaming APIs to emit execution traces for each node/subagent.
+   - Stream these traces to the frontend for real-time transparency.
+
+**Example (Pseudocode):**
+```python
+import langraph
+
+# Define nodes
+metadata_node = langraph.Node(MetadataAgent)
+entitlement_node = langraph.Node(EntitlementAgent)
+data_node = langraph.Node(DataAgent)
+aggregation_node = langraph.Node(AggregationAgent)
+
+# Define graph
+graph = langraph.Graph()
+graph.add_node(metadata_node)
+graph.add_node(entitlement_node)
+graph.add_node(data_node)
+graph.add_node(aggregation_node)
+
+# Define edges (parallel execution)
+graph.add_edge('start', metadata_node)
+graph.add_edge('start', entitlement_node)
+graph.add_edge(metadata_node, data_node)
+graph.add_edge(entitlement_node, data_node)
+graph.add_edge(data_node, aggregation_node)
+
+# Execute graph
+result = graph.run(input_context)
+```
+
+This section provides actionable guidance for using Langraph to orchestrate subagent workflows. Update and extend as needed for your specific use case.
+
+---
+
+## 5. Best Practices (from Anthropic and DataFlow)
 - Use orchestrator-worker (lead agent + subagents) pattern with FastMCP tools.
 - Parallelize subagent execution for speed and coverage.
 - Use explicit, detailed prompts for each subagent.
@@ -154,7 +234,7 @@
 
 ---
 
-## 5. Next Steps
+## 6. Next Steps
 1. Scaffold orchestrator FastMCP server and tools.
 2. Implement persona detection and subagent orchestration as FastMCP tools.
 3. Integrate entitlement check as a FastMCP tool.
