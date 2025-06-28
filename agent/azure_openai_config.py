@@ -29,7 +29,7 @@ def load_azure_openai_config() -> Optional[AzureOpenAIConfig]:
     """
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME") or os.getenv("AZURE_OPENAI_DEPLOYMENT")
+    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
     api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
 
     # If endpoint is not provided, Azure OpenAI is not configured
@@ -39,7 +39,7 @@ def load_azure_openai_config() -> Optional[AzureOpenAIConfig]:
 
     # Validate required fields
     if not deployment_name:
-        raise ValueError("AZURE_OPENAI_DEPLOYMENT_NAME or AZURE_OPENAI_DEPLOYMENT is required when Azure OpenAI endpoint is configured")
+        raise ValueError("AZURE_OPENAI_DEPLOYMENT_NAME is required when Azure OpenAI endpoint is configured")
 
     # Automatically determine authentication method: if API key is provided, use it; otherwise use Azure AD
     use_azure_ad = not bool(api_key)
@@ -72,7 +72,7 @@ def validate_azure_openai_config() -> Dict[str, Any]:
 
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME") or os.getenv("AZURE_OPENAI_DEPLOYMENT")
+    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
     # Check if Azure OpenAI is configured at all
     if not endpoint:
@@ -84,7 +84,7 @@ def validate_azure_openai_config() -> Dict[str, Any]:
 
     # Validate deployment name
     if not deployment_name:
-        missing_vars.append("AZURE_OPENAI_DEPLOYMENT_NAME or AZURE_OPENAI_DEPLOYMENT")
+        missing_vars.append("AZURE_OPENAI_DEPLOYMENT_NAME")
 
     # Note: No authentication validation needed - if no API key, Azure AD will be used automatically
 
@@ -100,7 +100,7 @@ def get_azure_openai_config_status() -> Dict[str, Any]:
     """
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
     api_key = os.getenv("AZURE_OPENAI_API_KEY")
-    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME") or os.getenv("AZURE_OPENAI_DEPLOYMENT")
+    deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
 
     if not endpoint:
         return {

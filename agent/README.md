@@ -79,12 +79,30 @@ Example configuration:
 ```
 
 ### 3. Set Environment Variables
+
+**Option A: Use Environment Template (Recommended)**
 ```bash
-export OPENAI_API_KEY="your-api-key"
+# Copy and edit the environment template
+cp env.template .env
+# Edit .env with your values
+```
+
+**Option B: Export Variables Directly**
+```bash
+# Azure OpenAI Configuration (Required)
+export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
+export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o"
+export AZURE_OPENAI_API_VERSION="2024-10-21"
+# Optional: If not provided, Azure AD authentication will be used
+export AZURE_OPENAI_API_KEY="your-api-key"
+
+# Agent Server Configuration
 export AGENT_SERVER_HOST="0.0.0.0"
 export AGENT_SERVER_PORT="8001"
 export MCP_CONFIG_PATH="./mcp_config.json"
 ```
+
+📖 **For detailed environment setup, see [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md)**
 
 ### 4. Start the Server
 ```bash

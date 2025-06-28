@@ -258,8 +258,8 @@ models:
 # Azure OpenAI (recommended)
 AZURE_OPENAI_API_KEY=your-azure-key
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com
-AZURE_OPENAI_DEPLOYMENT=your-deployment-name
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+AZURE_OPENAI_API_VERSION=2024-10-21
 
 # Or OpenAI
 OPENAI_API_KEY=your-openai-key

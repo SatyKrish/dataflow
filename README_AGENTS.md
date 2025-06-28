@@ -97,8 +97,8 @@ Create `.env` files in each component directory with:
 # Azure OpenAI Configuration
 AZURE_OPENAI_API_KEY=your_api_key
 AZURE_OPENAI_ENDPOINT=your_endpoint
-AZURE_OPENAI_DEPLOYMENT=your_deployment
-AZURE_OPENAI_API_VERSION=2024-02-01
+AZURE_OPENAI_DEPLOYMENT_NAME=your_deployment
+AZURE_OPENAI_API_VERSION=2024-10-21
 
 # Database Configuration
 POSTGRES_HOST=localhost
