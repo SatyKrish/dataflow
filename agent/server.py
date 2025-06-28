@@ -18,7 +18,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from langgraph_orchestrator import LangGraphOrchestrator
+from orchestrator import Orchestrator
 
 # Configure logging
 logging.basicConfig(
@@ -27,8 +27,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize LangGraph orchestrator
-orchestrator = LangGraphOrchestrator()
+# Initialize orchestrator
+orchestrator = Orchestrator()
 
 # Create FastAPI app
 app = FastAPI(

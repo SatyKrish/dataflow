@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-LangGraph-Based Orchestrator
+LangGraph Multi-Agent Orchestrator
 
-Replaces the custom orchestrator with a proper LangGraph StateGraph implementation
-following LangGraph multi-agent best practices.
+Modern LangGraph StateGraph implementation for intelligent multi-agent coordination
+with LLM-powered workflow supervision and Command-based handoffs.
 """
 
 import asyncio
@@ -51,7 +51,7 @@ class DataflowState(MessagesState):
     completed_at: Optional[str] = None
     total_agents_executed: int = 0
 
-class LangGraphOrchestrator:
+class Orchestrator:
     """LangGraph-based orchestrator following multi-agent best practices"""
     
     def __init__(self):
@@ -208,20 +208,24 @@ class LangGraphOrchestrator:
             return "complete"
     
     async def _metadata_agent_node(self, state: DataflowState) -> Command[Literal["supervisor"]]:
-        """Execute metadata agent with proper LangGraph integration"""
+        """Execute metadata agent with proper state management"""
+        
+        logger.info("Executing metadata agent")
         
         try:
-            logger.info("Executing metadata agent")
-            
-            # Convert state to context for agent
+            # Create context from current state
             context = self._state_to_context(state)
             
-            # Execute agent
-            result = await self.metadata_agent.execute(state.task_description, context)
+            # Execute the agent
+            result = await self.metadata_agent.execute(
+                session_id=state.session_id,
+                task_description=f"Metadata discovery: {state.task_description}",
+                context=context
+            )
             
-            # Create agent message
-            agent_message = AIMessage(
-                content=f"Metadata discovery completed. Found {result.get('metadata_summary', {}).get('schemas_discovered', 0)} schemas.",
+            # Add message to conversation
+            metadata_message = AIMessage(
+                content=f"Metadata Agent completed: {result.get('summary', 'Metadata discovery executed')}",
                 name="metadata_agent"
             )
             
@@ -229,37 +233,45 @@ class LangGraphOrchestrator:
                 goto="supervisor",
                 update={
                     "metadata_results": result,
-                    "messages": [agent_message],
-                    "total_agents_executed": state.total_agents_executed + 1
+                    "total_agents_executed": state.total_agents_executed + 1,
+                    "messages": state.messages + [metadata_message]
                 }
             )
             
         except Exception as e:
-            logger.error(f"Metadata agent failed: {e}")
+            logger.error(f"Metadata agent execution failed: {e}")
+            error_message = AIMessage(
+                content=f"Metadata Agent failed: {str(e)}",
+                name="metadata_agent"
+            )
+            
             return Command(
                 goto="supervisor",
                 update={
                     "error_count": state.error_count + 1,
-                    "messages": [AIMessage(content=f"Metadata agent failed: {str(e)}", name="metadata_agent")]
+                    "messages": state.messages + [error_message]
                 }
             )
     
     async def _entitlement_agent_node(self, state: DataflowState) -> Command[Literal["supervisor"]]:
-        """Execute entitlement agent with proper LangGraph integration"""
+        """Execute entitlement agent with proper state management"""
+        
+        logger.info("Executing entitlement agent")
         
         try:
-            logger.info("Executing entitlement agent")
-            
-            # Convert state to context for agent
+            # Create context from current state
             context = self._state_to_context(state)
             
-            # Execute agent
-            result = await self.entitlement_agent.execute(state.task_description, context)
+            # Execute the agent
+            result = await self.entitlement_agent.execute(
+                session_id=state.session_id,
+                task_description=f"Entitlement validation: {state.task_description}",
+                context=context
+            )
             
-            # Create agent message
-            access_granted = result.get("entitlement_summary", {}).get("access_granted", False)
-            agent_message = AIMessage(
-                content=f"Security validation completed. Access {'granted' if access_granted else 'denied'}.",
+            # Add message to conversation
+            entitlement_message = AIMessage(
+                content=f"Entitlement Agent completed: {result.get('summary', 'Entitlement validation executed')}",
                 name="entitlement_agent"
             )
             
@@ -267,50 +279,45 @@ class LangGraphOrchestrator:
                 goto="supervisor",
                 update={
                     "entitlement_results": result,
-                    "messages": [agent_message],
-                    "total_agents_executed": state.total_agents_executed + 1
+                    "total_agents_executed": state.total_agents_executed + 1,
+                    "messages": state.messages + [entitlement_message]
                 }
             )
             
         except Exception as e:
-            logger.error(f"Entitlement agent failed: {e}")
+            logger.error(f"Entitlement agent execution failed: {e}")
+            error_message = AIMessage(
+                content=f"Entitlement Agent failed: {str(e)}",
+                name="entitlement_agent"
+            )
+            
             return Command(
                 goto="supervisor",
                 update={
                     "error_count": state.error_count + 1,
-                    "messages": [AIMessage(content=f"Entitlement agent failed: {str(e)}", name="entitlement_agent")]
+                    "messages": state.messages + [error_message]
                 }
             )
     
     async def _data_agent_node(self, state: DataflowState) -> Command[Literal["supervisor"]]:
-        """Execute data agent with proper LangGraph integration"""
+        """Execute data agent with proper state management"""
+        
+        logger.info("Executing data agent")
         
         try:
-            logger.info("Executing data agent")
-            
-            # Check entitlement first
-            if state.entitlement_results:
-                access_granted = state.entitlement_results.get("entitlement_summary", {}).get("access_granted", False)
-                if not access_granted:
-                    logger.warning("Access denied by entitlement agent, skipping data retrieval")
-                    return Command(
-                        goto="supervisor",
-                        update={
-                            "data_results": {"error": "Access denied by entitlement validation"},
-                            "messages": [AIMessage(content="Data access denied due to security restrictions", name="data_agent")]
-                        }
-                    )
-            
-            # Convert state to context for agent
+            # Create context from current state including metadata and entitlement
             context = self._state_to_context(state)
             
-            # Execute agent
-            result = await self.data_agent.execute(state.task_description, context)
+            # Execute the agent
+            result = await self.data_agent.execute(
+                session_id=state.session_id,
+                task_description=f"Data retrieval: {state.task_description}",
+                context=context
+            )
             
-            # Create agent message
-            tools_executed = len(result.get("tool_execution_results", []))
-            agent_message = AIMessage(
-                content=f"Data retrieval completed. Executed {tools_executed} data tools.",
+            # Add message to conversation
+            data_message = AIMessage(
+                content=f"Data Agent completed: {result.get('summary', 'Data retrieval executed')}",
                 name="data_agent"
             )
             
@@ -318,37 +325,45 @@ class LangGraphOrchestrator:
                 goto="supervisor",
                 update={
                     "data_results": result,
-                    "messages": [agent_message],
-                    "total_agents_executed": state.total_agents_executed + 1
+                    "total_agents_executed": state.total_agents_executed + 1,
+                    "messages": state.messages + [data_message]
                 }
             )
             
         except Exception as e:
-            logger.error(f"Data agent failed: {e}")
+            logger.error(f"Data agent execution failed: {e}")
+            error_message = AIMessage(
+                content=f"Data Agent failed: {str(e)}",
+                name="data_agent"
+            )
+            
             return Command(
                 goto="supervisor",
                 update={
                     "error_count": state.error_count + 1,
-                    "messages": [AIMessage(content=f"Data agent failed: {str(e)}", name="data_agent")]
+                    "messages": state.messages + [error_message]
                 }
             )
     
     async def _aggregation_agent_node(self, state: DataflowState) -> Command[Literal["supervisor"]]:
-        """Execute aggregation agent with proper LangGraph integration"""
+        """Execute aggregation agent with proper state management"""
+        
+        logger.info("Executing aggregation agent")
         
         try:
-            logger.info("Executing aggregation agent")
-            
-            # Convert state to context for agent
+            # Create context from all previous results
             context = self._state_to_context(state)
             
-            # Execute agent
-            result = await self.aggregation_agent.execute(state.task_description, context)
+            # Execute the agent
+            result = await self.aggregation_agent.execute(
+                session_id=state.session_id,
+                task_description=f"Analysis synthesis: {state.task_description}",
+                context=context
+            )
             
-            # Create agent message
-            insights_count = len(result.get("final_synthesis", {}).get("primary_insights", []))
-            agent_message = AIMessage(
-                content=f"Analysis completed. Generated {insights_count} key insights.",
+            # Add message to conversation
+            aggregation_message = AIMessage(
+                content=f"Aggregation Agent completed: {result.get('summary', 'Analysis synthesis executed')}",
                 name="aggregation_agent"
             )
             
@@ -356,151 +371,153 @@ class LangGraphOrchestrator:
                 goto="supervisor",
                 update={
                     "aggregation_results": result,
-                    "messages": [agent_message],
-                    "total_agents_executed": state.total_agents_executed + 1
+                    "total_agents_executed": state.total_agents_executed + 1,
+                    "messages": state.messages + [aggregation_message]
                 }
             )
             
         except Exception as e:
-            logger.error(f"Aggregation agent failed: {e}")
+            logger.error(f"Aggregation agent execution failed: {e}")
+            error_message = AIMessage(
+                content=f"Aggregation Agent failed: {str(e)}",
+                name="aggregation_agent"
+            )
+            
             return Command(
                 goto="supervisor",
                 update={
                     "error_count": state.error_count + 1,
-                    "messages": [AIMessage(content=f"Aggregation agent failed: {str(e)}", name="aggregation_agent")]
+                    "messages": state.messages + [error_message]
                 }
             )
     
     async def _error_handler_node(self, state: DataflowState) -> Command[Literal["supervisor"]]:
-        """Handle errors and attempt recovery"""
+        """Handle errors and recovery"""
         
-        logger.info(f"Handling error (count: {state.error_count})")
+        logger.warning("Error handler activated")
         
-        # Add error handling message
         error_message = AIMessage(
-            content=f"Error handled. Attempting recovery (error count: {state.error_count})",
+            content="Error handler activated - attempting recovery",
             name="error_handler"
         )
         
         return Command(
-            goto="supervisor",
+            goto="supervisor", 
             update={
-                "messages": [error_message],
-                "workflow_status": "recovering"
+                "messages": state.messages + [error_message]
             }
         )
     
     def _state_to_context(self, state: DataflowState) -> Dict[str, Any]:
-        """Convert LangGraph state to agent context format"""
+        """Convert state to context dict for agent execution"""
         return {
-            "user_email": state.user_email,
-            "session_id": state.session_id,
-            "query": state.query,
             "metadata_results": state.metadata_results,
-            "entitlement_results": state.entitlement_results,
+            "entitlement_results": state.entitlement_results, 
             "data_results": state.data_results,
-            "workflow_status": state.workflow_status,
-            "messages": state.messages
+            "user_email": state.user_email,
+            "query": state.query
         }
     
     async def process_request(self, task_description: str, user_email: str, query: Optional[str] = None) -> Dict[str, Any]:
         """
-        Process a data analysis request using LangGraph workflow
+        Main entry point for processing research requests
         
         Args:
-            task_description: The data analysis task to perform
+            task_description: The research task to execute
             user_email: User making the request
             query: Optional specific query
             
         Returns:
-            Complete workflow results
+            Dict containing complete results and metadata
         """
+        
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         # Create initial state
         initial_state = DataflowState(
             messages=[HumanMessage(content=task_description)],
             task_description=task_description,
             user_email=user_email,
-            session_id=f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            session_id=session_id,
             query=query,
             started_at=datetime.now().isoformat()
         )
         
+        logger.info(f"Processing request: {task_description[:100]}...")
+        
         try:
-            # Execute the workflow
-            logger.info(f"Starting LangGraph workflow for task: {task_description}")
+            # Execute the graph
             final_state = await self.graph.ainvoke(initial_state)
             
-            # Return comprehensive results
-            return {
-                "workflow_status": final_state.get("workflow_status", "completed"),
+            # Compile comprehensive results
+            results = {
+                "session_id": final_state["session_id"],
+                "task_description": final_state["task_description"],
+                "user_email": final_state["user_email"],
+                "workflow_status": final_state["workflow_status"],
+                "started_at": final_state["started_at"],
+                "completed_at": final_state.get("completed_at"),
+                "total_agents_executed": final_state["total_agents_executed"],
+                "error_count": final_state["error_count"],
+                
+                # Agent results
                 "metadata_results": final_state.get("metadata_results"),
                 "entitlement_results": final_state.get("entitlement_results"),
                 "data_results": final_state.get("data_results"),
                 "aggregation_results": final_state.get("aggregation_results"),
-                "execution_summary": {
-                    "total_agents_executed": final_state.get("total_agents_executed", 0),
-                    "error_count": final_state.get("error_count", 0),
-                    "started_at": final_state.get("started_at"),
-                    "completed_at": final_state.get("completed_at"),
-                    "session_id": final_state.get("session_id")
-                },
-                "messages": final_state.get("messages", []),
-                "success": final_state.get("workflow_status") == "completed"
+                
+                # Conversation history
+                "messages": [
+                    {
+                        "type": type(msg).__name__,
+                        "content": msg.content,
+                        "name": getattr(msg, 'name', None)
+                    }
+                    for msg in final_state["messages"]
+                ]
             }
             
+            logger.info(f"Request completed successfully: {session_id}")
+            return results
+            
         except Exception as e:
-            logger.error(f"LangGraph workflow failed: {e}")
+            logger.error(f"Request processing failed: {e}")
             return {
+                "session_id": session_id,
+                "task_description": task_description,
+                "user_email": user_email,
                 "workflow_status": "failed",
+                "started_at": initial_state.started_at,
+                "completed_at": datetime.now().isoformat(),
                 "error": str(e),
-                "success": False
+                "error_count": 1
             }
 
-# Alternative: Tool-calling Supervisor Pattern
-# This follows LangGraph's supervisor (tool-calling) pattern where agents are tools
-
+# Tool definitions for potential tool-calling supervisor pattern
 @tool
 def execute_metadata_discovery(task_description: str, context: str) -> Command:
-    """Execute metadata discovery for data schema analysis."""
-    return Command(
-        goto="metadata_agent",
-        update={"task_description": task_description, "tool_context": context}
-    )
+    """Execute metadata discovery for the given task"""
+    return Command(goto="metadata_agent")
 
 @tool  
 def execute_entitlement_validation(security_context: str) -> Command:
-    """Execute security and entitlement validation."""
-    return Command(
-        goto="entitlement_agent",
-        update={"security_context": security_context}
-    )
+    """Execute entitlement validation for security compliance"""
+    return Command(goto="entitlement_agent")
 
 @tool
 def execute_data_retrieval(data_context: str) -> Command:
-    """Execute data retrieval from configured sources."""
-    return Command(
-        goto="data_agent", 
-        update={"data_context": data_context}
-    )
+    """Execute data retrieval from configured sources"""
+    return Command(goto="data_agent")
 
 @tool
 def execute_aggregation_analysis(analysis_context: str) -> Command:
-    """Execute final aggregation and analysis."""
-    return Command(
-        goto="aggregation_agent",
-        update={"analysis_context": analysis_context}
-    )
+    """Execute final aggregation and analysis"""
+    return Command(goto="aggregation_agent")
 
 class ToolCallingSupervisorOrchestrator:
-    """Alternative implementation using LangGraph's tool-calling supervisor pattern"""
+    """Alternative implementation using tool-calling supervisor pattern"""
     
     def __init__(self):
-        self.tools = [
-            execute_metadata_discovery,
-            execute_entitlement_validation, 
-            execute_data_retrieval,
-            execute_aggregation_analysis
-        ]
-        # Implementation would use ToolNode and tool-calling LLM
-        # See LangGraph documentation for complete example 
+        # This would implement tool-calling based coordination
+        # keeping for future consideration if needed
+        pass 
