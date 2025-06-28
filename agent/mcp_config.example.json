@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/typescript-sdk/main/src/schemas/mcp.schema.json",
+  "servers": {
+    "demoAgent": {
+      "type": "http",
+      "url": "http://dataflow-demo-mcp:8080/mcp",
+      "description": "AI-powered synthetic data generation and examples",
+      "timeout": 90000,
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    "denodoAgent": {
+      "type": "http", 
+      "url": "http://dataflow-denodo-mcp:8081/mcp",
+      "description": "Enterprise data warehouse queries through Denodo virtualization",
+      "timeout": 120000,
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    "fileSystemAgent": {
+      "type": "http",
+      "url": "http://filesystem-mcp:8082/mcp", 
+      "description": "File system and data lake access for unstructured data",
+      "timeout": 60000,
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    "webScrapingAgent": {
+      "type": "http",
+      "url": "http://webscraper-mcp:8083/mcp",
+      "description": "Web scraping and online data extraction",
+      "timeout": 180000,
+      "headers": {
+        "Content-Type": "application/json",
+        "User-Agent": "DataFlow-Agent/1.0"
+      }
+    },
+    "sqlDatabaseAgent": {
+      "type": "http",
+      "url": "http://sql-mcp:8084/mcp",
+      "description": "Direct SQL database connections for various database types",
+      "timeout": 90000,
+      "headers": {
+        "Content-Type": "application/json"
+      }
+    },
+    "apiIntegrationAgent": {
+      "type": "http",
+      "url": "http://api-integration-mcp:8085/mcp",
+      "description": "External API integrations and third-party data sources",
+      "timeout": 120000,
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer ${API_INTEGRATION_TOKEN}"
+      }
+    }
+  }
+} 
