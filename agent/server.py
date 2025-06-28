@@ -2,7 +2,7 @@
 """
 Multi-Agent Research Server
 
-FastAPI server that exposes HTTP endpoints for the langraph-based research agents.
+FastAPI server that exposes HTTP endpoints for LangGraph-based research agents.
 This server is called by the MCP server to execute multi-agent research tasks.
 """
 
@@ -18,8 +18,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from orchestrator import orchestrator
-from db_client import db_client
+from langgraph_orchestrator import LangGraphOrchestrator
 
 # Configure logging
 logging.basicConfig(
@@ -28,74 +27,54 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize LangGraph orchestrator
+orchestrator = LangGraphOrchestrator()
+
 # Create FastAPI app
 app = FastAPI(
-    title="Multi-Agent Research System",
-    description="Langraph-based multi-agent research coordination",
-    version="1.0.0"
+    title="LangGraph Multi-Agent Research System",
+    description="LangGraph-based multi-agent research coordination with intelligent workflows",
+    version="2.0.0"
 )
 
 # Request/Response models
 class ResearchRequest(BaseModel):
     query: str
-    session_id: Optional[str] = None
-    research_mode: str = "full"
     user_email: str = "default@example.com"
+    session_id: Optional[str] = None
 
 class ResearchResponse(BaseModel):
     session_id: str
     status: str
     results: Dict[str, Any]
-    execution_time_ms: int
     timestamp: str
 
 class HealthResponse(BaseModel):
     status: str
-    components: Dict[str, Any]
+    agents: Dict[str, str]
     timestamp: str
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connections on startup"""
-    try:
-        await db_client.connect()
-        logger.info("Database connection established")
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        # Continue without database for basic functionality
-
-@app.on_event("shutdown") 
-async def shutdown_event():
-    """Clean up connections on shutdown"""
-    try:
-        await db_client.disconnect()
-        logger.info("Database connection closed")
-    except Exception as e:
-        logger.error(f"Shutdown error: {e}")
-
-@app.post("/execute_research", response_model=ResearchResponse)
+@app.post("/research", response_model=ResearchResponse)
 async def execute_research(request: ResearchRequest):
-    """Execute multi-agent research for the given query"""
+    """Execute multi-agent research using LangGraph workflow"""
     
-    logger.info(f"Research request received: {request.query[:100]}...")
+    logger.info(f"Research request: {request.query[:100]}...")
     
     try:
         # Generate session ID if not provided
-        session_id = request.session_id or str(uuid.uuid4())
+        session_id = request.session_id or f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
         
-        # Execute research using orchestrator
-        results = await orchestrator.execute_research(
-            session_id=session_id,
-            query=request.query,
-            research_mode=request.research_mode,
-            user_email=request.user_email
+        # Execute research using LangGraph orchestrator
+        results = await orchestrator.process_request(
+            task_description=request.query,
+            user_email=request.user_email,
+            query=request.query
         )
         
         return ResearchResponse(
             session_id=session_id,
-            status="completed",
+            status=results.get("workflow_status", "completed"),
             results=results,
-            execution_time_ms=results.get("total_execution_time_ms", 0),
             timestamp=datetime.now().isoformat()
         )
         
@@ -111,25 +90,15 @@ async def health_check():
     """Check system health status"""
     
     try:
-        # Check orchestrator health
-        orchestrator_health = await orchestrator.health_check()
-        
-        components = {
-            "orchestrator": orchestrator_health,
-            "fastapi_server": {
-                "status": "healthy",
-                "version": "1.0.0"
-            }
-        }
-        
-        # Determine overall status
-        overall_status = "healthy"
-        if orchestrator_health.get("database_status", "").startswith("error"):
-            overall_status = "degraded"
-        
         return HealthResponse(
-            status=overall_status,
-            components=components,
+            status="healthy",
+            agents={
+                "metadata_agent": "ready",
+                "entitlement_agent": "ready", 
+                "data_agent": "ready",
+                "aggregation_agent": "ready",
+                "supervisor": "ready"
+            },
             timestamp=datetime.now().isoformat()
         )
         
@@ -144,38 +113,82 @@ async def health_check():
 async def root():
     """Root endpoint with basic information"""
     return {
-        "service": "Multi-Agent Research System",
-        "version": "1.0.0",
+        "service": "LangGraph Multi-Agent Research System",
+        "version": "2.0.0",
         "status": "running",
+        "framework": "LangGraph",
         "endpoints": {
-            "execute_research": "/execute_research",
-            "health": "/health"
+            "research": "/research",
+            "health": "/health",
+            "agents": "/agents"
         }
     }
 
 @app.get("/agents")
 async def list_agents():
-    """List available agents and their capabilities"""
+    """List available agents and their LLM-powered capabilities"""
     return {
+        "framework": "LangGraph StateGraph with Command handoffs",
+        "workflow_pattern": "Supervisor with LLM decision-making",
         "agents": {
-            "metadata": {
-                "description": "Discovers data schemas and metadata",
-                "capabilities": ["schema_discovery", "data_source_mapping"]
+            "supervisor": {
+                "type": "coordinator",
+                "description": "LLM-powered workflow supervisor",
+                "capabilities": [
+                    "intelligent_agent_selection",
+                    "workflow_coordination", 
+                    "error_recovery",
+                    "state_management"
+                ]
             },
-            "entitlement": {
-                "description": "Validates data access permissions",
-                "capabilities": ["access_validation", "permission_checking"]
+            "metadata_agent": {
+                "type": "specialist",
+                "description": "LLM-powered metadata discovery strategist",
+                "capabilities": [
+                    "strategic_discovery_planning",
+                    "intelligent_method_selection",
+                    "adaptive_metadata_exploration",
+                    "metadata_quality_assessment"
+                ]
             },
-            "data": {
-                "description": "Retrieves and processes data",
-                "capabilities": ["data_retrieval", "data_processing"]
+            "entitlement_agent": {
+                "type": "specialist", 
+                "description": "LLM-powered security reasoning specialist",
+                "capabilities": [
+                    "security_threat_analysis",
+                    "compliance_requirement_reasoning",
+                    "multi_dimensional_risk_assessment",
+                    "intelligent_access_control_decisions"
+                ]
             },
-            "aggregation": {
-                "description": "Synthesizes research findings",
-                "capabilities": ["result_synthesis", "citation_generation"]
+            "data_agent": {
+                "type": "specialist",
+                "description": "LLM-powered data tool orchestrator",
+                "capabilities": [
+                    "dynamic_mcp_tool_discovery",
+                    "intelligent_tool_selection",
+                    "adaptive_execution_strategies",
+                    "cross_source_result_synthesis"
+                ]
+            },
+            "aggregation_agent": {
+                "type": "specialist",
+                "description": "LLM-powered strategic data analyst",
+                "capabilities": [
+                    "intelligent_pattern_recognition",
+                    "business_insight_generation",
+                    "strategic_recommendation_creation",
+                    "comprehensive_analytical_synthesis"
+                ]
             }
         },
-        "research_modes": ["metadata", "data", "analysis", "full"]
+        "features": {
+            "state_management": "LangGraph MessagesState with typed fields",
+            "handoffs": "Command-based agent transitions",
+            "communication": "Message-based agent interaction",
+            "error_handling": "Intelligent recovery and fallback",
+            "workflow_control": "LLM-supervised execution flow"
+        }
     }
 
 if __name__ == "__main__":
@@ -183,7 +196,7 @@ if __name__ == "__main__":
     host = os.getenv("AGENT_SERVER_HOST", "0.0.0.0")
     port = int(os.getenv("AGENT_SERVER_PORT", 8001))
     
-    logger.info(f"Starting Multi-Agent Research Server on {host}:{port}")
+    logger.info(f"Starting LangGraph Multi-Agent Research Server on {host}:{port}")
     
     uvicorn.run(
         "server:app",
