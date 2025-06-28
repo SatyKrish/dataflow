@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from orchestrator import orchestrator
-from database import db_client
+from db_client import db_client
 
 # Configure logging
 logging.basicConfig(

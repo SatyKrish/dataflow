@@ -13,8 +13,12 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
-from database import db_client, AgentType
-from subagents import create_agent, MetadataAgent, EntitlementAgent, DataAgent, AggregationAgent
+from db_client import db_client, AgentType
+from agent_registry import create_agent
+from metadata_agent import MetadataAgent
+from entitlement_agent import EntitlementAgent
+from data_agent import DataAgent
+from aggregation_agent import AggregationAgent
 
 logger = logging.getLogger(__name__)
 

@@ -54,7 +54,7 @@ from openai import AsyncAzureOpenAI
 import httpx
 
 # Import local database client
-from database import db_client, SessionStatus, AgentType, ExecutionStatus, MemoryType
+from db_client import db_client, SessionStatus, AgentType, ExecutionStatus
 
 # Configure logging
 logging.basicConfig(
