@@ -19,6 +19,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from orchestrator import Orchestrator
+from azure_openai_config import get_azure_openai_config_status, validate_azure_openai_config
 
 # Configure logging
 logging.basicConfig(
@@ -109,6 +110,31 @@ async def health_check():
             detail=f"Health check failed: {str(e)}"
         )
 
+@app.get("/azure-openai/status")
+async def azure_openai_status():
+    """Check Azure OpenAI configuration and connection status"""
+    
+    try:
+        config_status = get_azure_openai_config_status()
+        validation = validate_azure_openai_config()
+        
+        # Test connection using one of the agents
+        connection_test = await orchestrator.metadata_agent.validate_azure_openai_connection()
+        
+        return {
+            "configuration": config_status,
+            "validation": validation,
+            "connection_test": connection_test,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Azure OpenAI status check failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Azure OpenAI status check failed: {str(e)}"
+        )
+
 @app.get("/")
 async def root():
     """Root endpoint with basic information"""
@@ -120,7 +146,8 @@ async def root():
         "endpoints": {
             "research": "/research",
             "health": "/health",
-            "agents": "/agents"
+            "agents": "/agents",
+            "azure_openai_status": "/azure-openai/status"
         }
     }
 

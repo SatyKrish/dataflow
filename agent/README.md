@@ -213,16 +213,56 @@ Query: "Analyze customer behavior with real data and examples"
 
 ## 🧪 Testing
 
-Run the test script to validate the implementation:
+All tests have been consolidated under the `test/` directory with a comprehensive test runner.
 
+### Quick Start - Run All Tests
 ```bash
-python test_server.py
+python run_tests.py
 ```
 
-Test the data agent specifically:
+### Run Specific Test Modules
 ```bash
-python test_data_agent.py
+# Azure OpenAI configuration and connection tests
+python run_tests.py azure_openai
+
+# Server endpoint tests (requires server to be running)
+python run_tests.py server
+
+# Data agent functionality tests
+python run_tests.py data_agent
 ```
+
+### Test Utilities
+```bash
+# List available tests
+python run_tests.py --list
+
+# Quick health check
+python run_tests.py --health
+
+# Get help
+python run_tests.py --help
+```
+
+### Alternative - Run from Test Directory
+```bash
+cd test
+python test_runner.py           # Run all tests
+python test_azure_openai.py     # Run Azure OpenAI tests only
+python test_server.py           # Run server tests only
+python test_data_agent.py       # Run data agent tests only
+```
+
+### Using pytest
+```bash
+cd test
+pytest                          # Run all tests
+pytest -m "azure_openai"        # Run Azure OpenAI tests only
+pytest -m "integration"         # Run integration tests only
+pytest test_azure_openai.py     # Run specific test file
+```
+
+See `test/README.md` for detailed testing documentation.
 
 ## 🔧 Adding New Data Sources
 

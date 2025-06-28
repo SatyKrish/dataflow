@@ -22,6 +22,7 @@ from entitlement_agent import EntitlementAgent
 from data_agent import DataAgent
 from aggregation_agent import AggregationAgent
 from base_agent import BaseAgent
+from azure_openai_client import LLMValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +176,7 @@ class Orchestrator:
         """
         
         try:
-            # Use the base agent's LLM calling capability
+            # Use the base agent's improved LLM calling capability
             llm_response = await self.metadata_agent.call_llm(system_prompt, user_prompt, max_tokens=50)
             
             # Extract decision
@@ -184,11 +185,15 @@ class Orchestrator:
             # Validate decision
             valid_options = ["metadata_agent", "entitlement_agent", "data_agent", "aggregation_agent", "complete", "error"]
             if decision in valid_options:
+                logger.info(f"LLM supervisor decided: {decision}")
                 return decision
             else:
                 logger.warning(f"Invalid LLM decision: {decision}, falling back to sequential logic")
                 return self._fallback_decision_logic(state)
                 
+        except LLMValidationError as e:
+            logger.error(f"Azure OpenAI validation error in supervisor decision: {e}")
+            return self._fallback_decision_logic(state)
         except Exception as e:
             logger.error(f"LLM supervisor decision failed: {e}")
             return self._fallback_decision_logic(state)
