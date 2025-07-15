@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import {
   ResponsiveContainer,
   BarChart,
@@ -38,6 +38,29 @@ interface ChartRendererProps {
   artifact: {
     content: string
   }
+}
+
+// Node and Edge interfaces for graph visualization
+interface GraphNode {
+  id: string
+  label: string
+  x?: number
+  y?: number
+  color?: string
+  size?: number
+  type?: 'circle' | 'rect' | 'diamond'
+  data?: any
+}
+
+interface GraphEdge {
+  id: string
+  source: string
+  target: string
+  label?: string
+  color?: string
+  weight?: number
+  type?: 'solid' | 'dashed' | 'dotted'
+  arrow?: boolean
 }
 
 // Enhanced color palette for more chart types
@@ -84,6 +107,251 @@ function cleanJsonString(jsonString: string): string {
   cleaned = cleaned.replace(/,(\s*[}\]])/g, "$1")
 
   return cleaned.trim()
+}
+
+// Graph Visualization Component
+interface GraphVisualizationProps {
+  data: {
+    nodes: GraphNode[]
+    edges: GraphEdge[]
+  }
+  config?: {
+    width?: number
+    height?: number
+    nodeSize?: number
+    title?: string
+    subtitle?: string
+    footer?: string
+    physics?: boolean
+    showLabels?: boolean
+    directed?: boolean
+  }
+}
+
+function GraphVisualization({ data, config = {} }: GraphVisualizationProps) {
+  const [draggedNode, setDraggedNode] = useState<string | null>(null)
+  const [nodePositions, setNodePositions] = useState<{ [key: string]: { x: number; y: number } }>({})
+  
+  const containerRef = useRef<SVGSVGElement>(null)
+  
+  const width = config.width || 600
+  const height = config.height || 400
+  const nodeSize = config.nodeSize || 20
+  const showLabels = config.showLabels !== false
+  const directed = config.directed !== false
+
+  // Initialize node positions using force simulation or provided coordinates
+  useEffect(() => {
+    if (!data.nodes) return
+
+    const positions: { [key: string]: { x: number; y: number } } = {}
+    
+    data.nodes.forEach((node, index) => {
+      if (node.x !== undefined && node.y !== undefined) {
+        positions[node.id] = { x: node.x, y: node.y }
+      } else {
+        // Simple circular layout as fallback
+        const angle = (index / data.nodes.length) * 2 * Math.PI
+        const radius = Math.min(width, height) * 0.3
+        positions[node.id] = {
+          x: width / 2 + radius * Math.cos(angle),
+          y: height / 2 + radius * Math.sin(angle)
+        }
+      }
+    })
+    
+    setNodePositions(positions)
+  }, [data.nodes, width, height])
+
+  const handleMouseDown = (nodeId: string, event: React.MouseEvent) => {
+    event.preventDefault()
+    setDraggedNode(nodeId)
+  }
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!draggedNode || !containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+
+    setNodePositions(prev => ({
+      ...prev,
+      [draggedNode]: { x, y }
+    }))
+  }
+
+  const handleMouseUp = () => {
+    setDraggedNode(null)
+  }
+
+  const renderEdge = (edge: GraphEdge) => {
+    const sourcePos = nodePositions[edge.source]
+    const targetPos = nodePositions[edge.target]
+    
+    if (!sourcePos || !targetPos) return null
+
+    const strokeDasharray = edge.type === 'dashed' ? '5,5' : edge.type === 'dotted' ? '2,2' : 'none'
+    
+    return (
+      <g key={edge.id}>
+        <line
+          x1={sourcePos.x}
+          y1={sourcePos.y}
+          x2={targetPos.x}
+          y2={targetPos.y}
+          stroke={edge.color || CHART_THEME.colors.textLight}
+          strokeWidth={edge.weight || 1}
+          strokeDasharray={strokeDasharray}
+          markerEnd={directed && edge.arrow !== false ? "url(#arrowhead)" : undefined}
+        />
+        {edge.label && (
+          <text
+            x={(sourcePos.x + targetPos.x) / 2}
+            y={(sourcePos.y + targetPos.y) / 2}
+            textAnchor="middle"
+            fill={CHART_THEME.colors.text}
+            fontSize={CHART_THEME.fontSize - 2}
+            dy="-5"
+            className="pointer-events-none select-none"
+          >
+            {edge.label}
+          </text>
+        )}
+      </g>
+    )
+  }
+
+  const renderNode = (node: GraphNode) => {
+    const pos = nodePositions[node.id]
+    if (!pos) return null
+
+    const size = node.size || nodeSize
+    const color = node.color || COLORS[0]
+    
+    return (
+      <g key={node.id}>
+        {node.type === 'rect' ? (
+          <rect
+            x={pos.x - size / 2}
+            y={pos.y - size / 2}
+            width={size}
+            height={size}
+            fill={color}
+            stroke={CHART_THEME.colors.text}
+            strokeWidth={1}
+            rx={2}
+            className="cursor-pointer hover:opacity-80"
+            onMouseDown={(e) => handleMouseDown(node.id, e)}
+          />
+        ) : node.type === 'diamond' ? (
+          <polygon
+            points={`${pos.x},${pos.y - size/2} ${pos.x + size/2},${pos.y} ${pos.x},${pos.y + size/2} ${pos.x - size/2},${pos.y}`}
+            fill={color}
+            stroke={CHART_THEME.colors.text}
+            strokeWidth={1}
+            className="cursor-pointer hover:opacity-80"
+            onMouseDown={(e) => handleMouseDown(node.id, e)}
+          />
+        ) : (
+          <circle
+            cx={pos.x}
+            cy={pos.y}
+            r={size / 2}
+            fill={color}
+            stroke={CHART_THEME.colors.text}
+            strokeWidth={1}
+            className="cursor-pointer hover:opacity-80"
+            onMouseDown={(e) => handleMouseDown(node.id, e)}
+          />
+        )}
+        {showLabels && (
+          <text
+            x={pos.x}
+            y={pos.y + size + 15}
+            textAnchor="middle"
+            fill={CHART_THEME.colors.text}
+            fontSize={CHART_THEME.fontSize}
+            className="pointer-events-none select-none font-medium"
+          >
+            {node.label}
+          </text>
+        )}
+      </g>
+    )
+  }
+
+  if (!data.nodes || !data.edges) {
+    return (
+      <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-800">
+        <div className="flex items-center gap-2 mb-2">
+          <AlertCircle className="w-4 h-4" />
+          <p className="font-semibold">Invalid Graph Data</p>
+        </div>
+        <p>Graph data must have 'nodes' and 'edges' arrays.</p>
+        <div className="mt-3 p-2 bg-muted border border-border rounded-sm">
+          <p className="text-foreground font-medium text-xs mb-1">✅ Expected format:</p>
+          <pre className="text-muted-foreground text-xs font-mono whitespace-pre-wrap">
+            {`{
+  "chartType": "graph",
+  "data": {
+    "nodes": [
+      {"id": "1", "label": "Node 1", "color": "#dc2626"},
+      {"id": "2", "label": "Node 2", "color": "#000000"}
+    ],
+    "edges": [
+      {"id": "e1", "source": "1", "target": "2", "label": "connects to"}
+    ]
+  },
+  "config": {
+    "title": "Network Graph",
+    "directed": true,
+    "showLabels": true
+  }
+}`}
+          </pre>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full h-full">
+      <svg
+        ref={containerRef}
+        width="100%"
+        height={height}
+        viewBox={`0 0 ${width} ${height}`}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        className="border border-gray-200 dark:border-gray-700 rounded"
+      >
+        {/* Arrow marker for directed graphs */}
+        <defs>
+          <marker
+            id="arrowhead"
+            markerWidth="10"
+            markerHeight="7"
+            refX="9"
+            refY="3.5"
+            orient="auto"
+          >
+            <polygon
+              points="0 0, 10 3.5, 0 7"
+              fill={CHART_THEME.colors.textLight}
+            />
+          </marker>
+        </defs>
+        
+        {/* Render edges first (behind nodes) */}
+        {data.edges.map(renderEdge)}
+        
+        {/* Render nodes */}
+        {data.nodes.map(renderNode)}
+      </svg>
+    </div>
+  )
 }
 
 export function ChartRenderer({ artifact }: ChartRendererProps) {
@@ -152,23 +420,36 @@ export function ChartRenderer({ artifact }: ChartRendererProps) {
           </pre>
         </details>
         <div className="mt-3 p-2 bg-muted border border-border rounded-sm">
-          <p className="text-foreground font-medium text-xs mb-1">✅ Corrected version:</p>
+          <p className="text-foreground font-medium text-xs mb-1">✅ Corrected chart examples:</p>
           <pre className="text-muted-foreground text-xs font-mono whitespace-pre-wrap">
-            {`{
+            {`// Pie Chart
+{
   "chartType": "pie",
   "data": [
     {"region": "East", "avg_temp": 81.33},
-    {"region": "Midwest", "avg_temp": 76.67},
-    {"region": "West", "avg_temp": 69.67}
+    {"region": "Midwest", "avg_temp": 76.67}
   ],
   "config": {
-    "title": "Average June Temperatures by Region",
-    "subtitle": "Grouped by East, Midwest, and West",
-    "footer": "Data updated as of June 16, 2025",
-    "legend": true,
-    "series": [
-      {"dataKey": "avg_temp", "fill": "#3b82f6", "name": "Avg Temperature (°F)"}
+    "title": "Temperature by Region",
+    "legend": true
+  }
+}
+
+// Graph/Network
+{
+  "chartType": "graph",
+  "data": {
+    "nodes": [
+      {"id": "1", "label": "Node A", "color": "#dc2626"},
+      {"id": "2", "label": "Node B", "color": "#000000"}
+    ],
+    "edges": [
+      {"id": "e1", "source": "1", "target": "2", "label": "connects"}
     ]
+  },
+  "config": {
+    "title": "Network Graph",
+    "directed": true
   }
 }`}
           </pre>
@@ -655,6 +936,10 @@ export function ChartRenderer({ artifact }: ChartRendererProps) {
           </BarChart>
         )
 
+      case "graph":
+      case "network":
+        return <GraphVisualization data={chartData.data} config={chartData.config} />
+
       default:
         return (
           <div className="text-center p-8 text-gray-500 dark:text-gray-400">
@@ -664,7 +949,7 @@ export function ChartRenderer({ artifact }: ChartRendererProps) {
             </p>
             <p className="text-sm mb-3">Supported types:</p>
             <div className="flex flex-wrap justify-center gap-2 text-xs">
-              {['bar', 'line', 'area', 'pie', 'donut', 'scatter', 'radar', 'composed', 'treemap', 'funnel', 'heatmap', 'histogram', 'waterfall'].map(type => (
+              {['bar', 'line', 'area', 'pie', 'donut', 'scatter', 'radar', 'composed', 'treemap', 'funnel', 'heatmap', 'histogram', 'waterfall', 'graph', 'network'].map(type => (
                 <code key={type} className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded font-mono">
                   {type}
                 </code>
