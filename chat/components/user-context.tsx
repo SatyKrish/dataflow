@@ -9,6 +9,8 @@ interface UserContextProps {
   setRole: (role: UserRole) => void
   preferences: UserPreferences
   updatePreferences: (prefs: Partial<UserPreferences>) => void
+  // Method for backend to update role based on conversation analysis
+  updateRoleFromBackend: (role: UserRole) => void
 }
 
 interface UserPreferences {
@@ -84,6 +86,12 @@ const roleBasedDefaults: Record<UserRole, Partial<UserPreferences>> = {
 
 const UserContext = createContext<UserContextProps | undefined>(undefined)
 
+/**
+ * User Context Provider
+ * 
+ * Manages user roles and preferences for persona-based UI optimization.
+ * Role determination is handled by the backend based on conversation analysis.
+ */
 export function UserProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>('general')
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences)
@@ -130,12 +138,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('user-preferences', JSON.stringify(updated))
   }
 
+  // Method for backend to programmatically update role
+  const updateRoleFromBackend = (newRole: UserRole) => {
+    console.log(`🤖 Backend detected user role: ${newRole}`)
+    updateRole(newRole)
+  }
+
   return (
     <UserContext.Provider value={{
       role,
       setRole: updateRole,
       preferences,
-      updatePreferences
+      updatePreferences,
+      updateRoleFromBackend
     }}>
       {children}
     </UserContext.Provider>
@@ -212,93 +227,4 @@ export function useRoleOptimizations() {
     requiresRealTime: role === 'developer',
     prefersSimplicity: role === 'product-owner'
   }
-}
-
-/**
- * Component for user role selection and onboarding
- */
-export function RoleSelector() {
-  const { role, setRole } = useUser()
-  const [isOpen, setIsOpen] = useState(!role || role === 'general')
-
-  const roles: { value: UserRole; label: string; description: string; icon: string }[] = [
-    {
-      value: 'data-analyst',
-      label: 'Data Analyst',
-      description: 'I work with large datasets and need advanced analytics',
-      icon: '📊'
-    },
-    {
-      value: 'finance-analyst',
-      label: 'Finance Analyst',
-      description: 'I analyze financial data and create reports',
-      icon: '💰'
-    },
-    {
-      value: 'product-owner',
-      label: 'Product Owner',
-      description: 'I need clear insights and KPI dashboards',
-      icon: '🎯'
-    },
-    {
-      value: 'developer',
-      label: 'Developer',
-      description: 'I build with data and need technical capabilities',
-      icon: '👨‍💻'
-    }
-  ]
-
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="text-sm text-gray-500 hover:text-gray-700"
-      >
-        Role: {roles.find(r => r.value === role)?.label || 'General'}
-      </button>
-    )
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-xl font-semibold mb-4">Select Your Role</h2>
-        <p className="text-gray-600 mb-6">
-          This helps us optimize the interface for your specific needs.
-        </p>
-        
-        <div className="space-y-3">
-          {roles.map((roleOption) => (
-            <button
-              key={roleOption.value}
-              onClick={() => {
-                setRole(roleOption.value)
-                setIsOpen(false)
-              }}
-              className={`w-full p-4 rounded-lg border-2 text-left transition-colors ${
-                role === roleOption.value
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-start space-x-3">
-                <span className="text-2xl">{roleOption.icon}</span>
-                <div>
-                  <div className="font-medium">{roleOption.label}</div>
-                  <div className="text-sm text-gray-600">{roleOption.description}</div>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={() => setIsOpen(false)}
-          className="w-full mt-4 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  )
 }
