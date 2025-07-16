@@ -49,7 +49,7 @@ import ruby from "react-syntax-highlighter/dist/esm/languages/prism/ruby"
 import rust from "react-syntax-highlighter/dist/esm/languages/prism/rust"
 import swift from "react-syntax-highlighter/dist/esm/languages/prism/swift"
 import type { ArtifactContent } from "@/lib/artifact-detector"
-import { ChartRenderer } from "./chart-renderer"
+import { PlotlyChartRenderer } from "./plotly-chart-renderer"
 import { TableRenderer } from "./table-renderer"
 import { ChatMessageMermaidRenderer } from "./chat-message-mermaid-renderer"
 import { useThrottledResize } from "@/hooks/use-resize-optimization"
@@ -460,7 +460,7 @@ function ArtifactRenderer({ artifact }: { artifact: ArtifactContent }) {
     return <TableRenderer artifact={artifact} />
   }
   if (artifact.type === "chart") {
-    return <ChartRenderer artifact={artifact} />
+    return <PlotlyChartRenderer artifact={artifact} />
   }
   if (artifact.type === "diagram" && artifact.language?.toLowerCase() === "mermaid") {
     return <ChatMessageMermaidRenderer code={artifact.content} />
