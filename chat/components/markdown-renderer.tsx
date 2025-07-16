@@ -2,7 +2,7 @@
 
 import ReactMarkdown from "react-markdown"
 import { memo, useState } from "react"
-import { ChevronDown, ChevronRight, Code } from "lucide-react"
+import { ChevronDown, ChevronUp, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Components } from "react-markdown"
 
@@ -29,23 +29,23 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
   }
   
   return (
-    <div className="border border-border rounded-lg my-2 bg-muted/30">
+    <div className="border border-border rounded-lg my-2 bg-slate-100 dark:bg-slate-800">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full justify-between p-3 h-auto font-normal hover:bg-muted/50"
+        className="w-full justify-between p-3 h-auto font-normal hover:bg-slate-200 dark:hover:bg-slate-700"
       >
         <div className="flex items-center gap-2 text-muted-foreground">
           <Code className="h-4 w-4" />
           <span className="text-sm">View {getTitle()}</span>
         </div>
-        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </Button>
       
       {isExpanded && (
         <div className="border-t border-border">
-          <pre className="bg-muted p-3 rounded-b-lg text-sm font-mono overflow-x-auto">
+          <pre className="bg-slate-50 dark:bg-slate-900 p-3 rounded-b-lg text-sm font-mono overflow-x-auto">
             <code>{content}</code>
           </pre>
         </div>
