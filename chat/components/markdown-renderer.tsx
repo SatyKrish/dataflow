@@ -1,12 +1,57 @@
 "use client"
 
 import ReactMarkdown from "react-markdown"
-import { memo } from "react"
+import { memo, useState } from "react"
+import { ChevronDown, ChevronRight, Code } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import type { Components } from "react-markdown"
 
 interface MarkdownRendererProps {
   content: string
   className?: string
+}
+
+/**
+ * Collapsible code block for chart/table JSON data
+ */
+function CollapsibleCodeBlock({ language, content }: { language: string; content: string }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  const getTitle = () => {
+    switch (language) {
+      case 'chart':
+        return 'Chart Configuration'
+      case 'table':
+        return 'Table Data'
+      default:
+        return 'Code'
+    }
+  }
+  
+  return (
+    <div className="border border-border rounded-lg my-2 bg-muted/30">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full justify-between p-3 h-auto font-normal hover:bg-muted/50"
+      >
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Code className="h-4 w-4" />
+          <span className="text-sm">View {getTitle()}</span>
+        </div>
+        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </Button>
+      
+      {isExpanded && (
+        <div className="border-t border-border">
+          <pre className="bg-muted p-3 rounded-b-lg text-sm font-mono overflow-x-auto">
+            <code>{content}</code>
+          </pre>
+        </div>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -55,8 +100,16 @@ const markdownComponents: Partial<Components> = {
   // Inline code
   code: ({ children, ...props }) => {
     const isBlock = props.className?.includes('language-')
+    const language = props.className?.replace('language-', '')
     
     if (isBlock) {
+      // Check if this is a chart or table JSON block
+      const isChartOrTable = language === 'chart' || language === 'table'
+      
+      if (isChartOrTable) {
+        return <CollapsibleCodeBlock language={language} content={String(children)} />
+      }
+      
       return (
         <span className="block bg-muted p-2 rounded text-sm font-mono my-1 overflow-x-auto">
           {children}
@@ -83,8 +136,27 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   content, 
   className = "" 
 }: MarkdownRendererProps) {
+  // Function to detect and hide standalone chart/table JSON
+  const processContent = (rawContent: string) => {
+    // Replace standalone JSON objects that look like chart/table data
+    return rawContent.replace(/```(?:json|chart|table)\n?(\{[\s\S]*?\})\n?```/g, (match, jsonContent) => {
+      try {
+        const parsed = JSON.parse(jsonContent)
+        if (parsed.chartType || parsed.type === 'table' || parsed.columns) {
+          // Determine type based on content
+          const type = parsed.chartType ? 'chart' : 'table'
+          return `\`\`\`${type}\n${jsonContent}\n\`\`\``
+        }
+      } catch (e) {
+        // If not valid JSON, return original
+      }
+      return match
+    })
+  }
+
   // Aggressive content normalization for chat context
-  const normalizedContent = content
+  const processedContent = processContent(content)
+  const normalizedContent = processedContent
     .replace(/\n{2,}/g, '\n') // Convert all multiple newlines to single newlines
     .replace(/^\s+|\s+$/g, '') // Trim all whitespace
     .replace(/\n\s+/g, '\n') // Remove indentation from new lines
