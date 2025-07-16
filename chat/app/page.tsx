@@ -13,13 +13,17 @@ import { Button } from "@/components/ui/button"
 import { PanelLeftOpen, PanelLeftClose, LayoutGrid } from "lucide-react"
 import { toast } from "sonner"
 import { detectArtifacts, type ArtifactContent } from "@/lib/artifact-detector"
-import { PerformanceMonitor } from "@/components/performance-monitor"
+import { VirtualizedMessageList } from "@/components/virtualized-message-list"
+import { PerformanceDashboard } from "@/components/performance-dashboard"
+import { UserProvider, RoleSelector } from "@/components/user-context"
+import { useMemoryManagement, useDebouncedStorage } from "@/lib/memory-management"
 import { ChatStorage, type TimelineGroup } from "@/lib/chat-storage"
 import { cn } from "@/lib/utils"
 import { useThrottledResize } from "@/hooks/use-resize-optimization"
 import { useMCP } from "@/components/mcp/mcp-provider"
 
-export default function ChatPage() {
+function ChatPageContent() {
+  // ... all existing state and logic ...
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const [isResizingSidebar, setIsResizingSidebar] = useState(false)
@@ -30,6 +34,10 @@ export default function ChatPage() {
   const [timelineGroups, setTimelineGroups] = useState<TimelineGroup[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string>("")
   const [chatComponentKey, setChatComponentKey] = useState(0)
+
+  // Performance optimizations
+  const { performCleanup, registerCleanupFunction } = useMemoryManagement()
+  const { debouncedSave } = useDebouncedStorage(2000)
 
   // MCP hook for tool and resource management
   const mcp = useMCP()
@@ -350,7 +358,19 @@ export default function ChatPage() {
             selectedArtifactId={selectedArtifactId}
           />
         )}
+        
+        {/* Performance Dashboard */}
+        <PerformanceDashboard />
       </div>
     </>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <UserProvider>
+      <RoleSelector />
+      <ChatPageContent />
+    </UserProvider>
   )
 }
