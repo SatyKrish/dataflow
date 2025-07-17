@@ -113,8 +113,8 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
   }
   
   return (
-    <div className="border border-gray-300 rounded my-1 bg-gray-100 shadow-none">
-      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-300">
+    <div className="border border-gray-100 rounded my-1 bg-gray-50 shadow-none">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-200">
         <Button
           variant="ghost"
           size="sm"
