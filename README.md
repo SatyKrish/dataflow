@@ -45,123 +45,229 @@ DataFlow consists of four main components working together seamlessly:
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### Component Details
+### Multi-Agent System Architecture
 
-#### 🎨 **Chat Interface** (`/chat`)
-- **Framework**: Next.js 15 with TypeScript and shadcn/ui
-- **Authentication**: Azure SSO with NextAuth.js
-- **Features**: 
-  - Real-time streaming chat with typewriter effects
-  - Artifact management (code blocks, charts, diagrams)
-  - Session persistence and chat history
-  - Responsive design with mobile support
-  - Interactive data visualizations with Recharts
-  - Mermaid diagram rendering
-  - Performance monitoring and optimization
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Chat Interface│    │ MCP Agent Server│    │ Agent Server    │
+│                 │────│ (FastMCP)       │────│ (FastAPI)       │
+│ chat/           │    │ mcp/agent/      │    │ agent/          │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                        │
+                              ┌─────────────────────────┼─────────────────────────┐
+                              ▼                         ▼                         ▼
+                    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+                    │ Research        │    │ Specialized     │    │ External MCP    │
+                    │ Orchestrator    │    │ Subagents       │    │ Servers         │
+                    │                 │    │                 │    │                 │
+                    │ • Query Analysis│    │ • MetadataAgent │    │ • Demo MCP      │
+                    │ • Task Planning │    │ • EntitlementAgent│  │ • Denodo MCP    │
+                    │ • Parallel Exec │    │ • DataAgent     │    │                 │
+                    │ • Result Synthesis│  │ • AggregationAgent│  │                 │
+                    └─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │                         │                         │
+                              └─────────────────────────┼─────────────────────────┘
+                                                        ▼
+                                              ┌─────────────────┐
+                                              │ PostgreSQL DB   │
+                                              │                 │
+                                              │ • Sessions      │
+                                              │ • Executions    │
+                                              │ • Results       │
+                                              │ • Analytics     │
+                                              └─────────────────┘
+```
 
-#### 🤖 **Agent Core** (`/agent`)
-- **Framework**: FastAPI with AutoGen Core integration
-- **AI Integration**: Support for multiple LLM providers
-- **Features**:
-  - Streaming AI responses compatible with Vercel AI SDK
-  - Advanced data visualization and chart generation
-  - Code generation with syntax highlighting
-  - Structured table output with sorting
-  - CORS-enabled API endpoints
-  - Health monitoring and metrics
+### Specialized Agents
 
-#### 🔌 **MCP Servers** (`/mcp`) - **Now using FastMCP 2.9+**
-- **Demo Server**: AI-powered tools with synthetic data generation
-- **Denodo Server**: Enterprise data virtualization with natural language queries
-- **Migration Benefits**:
-  - **69% code reduction** (1,269 → 388 lines)
-  - **Multiple transports**: HTTP, STDIO, SSE support
-  - **Enhanced validation**: Automatic type-hint based validation
-  - **Standards compliance**: Full MCP 2024-11-05 specification
-
-**Available Tools**:
-- **ask_ai**: General AI assistance with multiple modes (generate, analyze, info)
-- **generate_synthetic_data**: Create realistic test data for various domains
-- **denodo_query**: Natural language database queries via Denodo AI SDK
+- **MetadataAgent**: Discover data schemas and metadata (schema discovery, data source mapping, Denodo MCP integration)
+- **EntitlementAgent**: Validate data access permissions (access validation, permission checking, entitlement simulation)
+- **DataAgent**: Retrieve and process data (data retrieval, processing, calls Denodo and Demo MCP)
+- **AggregationAgent**: Synthesize research findings (result synthesis, citation generation, uses Azure OpenAI)
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+ (for local development)
-- Python 3.11+ (for local development)
+- PostgreSQL running on localhost:5432
+- Python 3.8+ with pip
+- Azure OpenAI API access
 
-### Using Docker (Recommended)
+### 1. Environment Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd dataflow
-   ```
-
-2. **Configure environment variables**
-   ```bash
-   # Copy environment templates
-   cp chat/.env.production.template chat/.env.production
-   cp mcp/demo/.env.template mcp/demo/.env
-   cp mcp/denodo/.env.template mcp/denodo/.env
-   
-   # Edit with your API keys and configurations
-   ```
-
-3. **Start the platform**
-   ```bash
-   # Start with FastMCP servers (recommended)
-   docker-compose --profile fastmcp up -d
-   
-   # Or start core services with demo MCP
-   docker-compose up -d
-   
-   # Include Denodo MCP server
-   docker-compose --profile denodo up -d
-   ```
-
-4. **Access the application**
-   - **Chat Interface**: http://localhost:3000
-   - **Agent API**: http://localhost:8000
-   - **Demo MCP Server**: http://localhost:8081
-   - **Denodo MCP Server**: http://localhost:8082 (if enabled)
-
-### Local Development
-
-#### Chat Interface
-```bash
-cd chat
-npm install
-npm run dev
-# Runs on http://localhost:3000
-```
-
-#### Agent Core
+**Option A: Use Environment Template (Recommended)**
 ```bash
 cd agent
-pip install -r requirements.txt
-cp model_config.yaml.template model_config.yaml
-# Configure your API keys in model_config.yaml
-python app.py
-# Runs on http://localhost:8000
+cp env.template .env
+# Edit .env with your values
 ```
 
-#### MCP Servers (FastMCP)
+**Option B: Export Variables Directly**
 ```bash
-# Demo server
-cd mcp/demo
-pip install -r requirements.txt
-python fastmcp_main.py --transport http --port 8081
-
-# Denodo server  
-cd mcp/denodo
-pip install -r requirements.txt
-python fastmcp_main.py --transport http --port 8082
-
-# STDIO transport for Claude Desktop
-python fastmcp_main.py --transport stdio
+export AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
+export AZURE_OPENAI_DEPLOYMENT_NAME="gpt-4o"
+export AZURE_OPENAI_API_VERSION="2024-10-21"
+# Optional: If not provided, Azure AD authentication will be used
+export AZURE_OPENAI_API_KEY="your-api-key"
 ```
+
+### 2. Install Dependencies
+
+```bash
+cd data && pip install -r requirements.txt && cd ..
+cd agent && pip install -r requirements.txt && cd ..
+cd mcp/agent && pip install -r requirements.txt && cd ../..
+```
+
+### 3. Start the System
+
+Use the convenient startup script:
+```bash
+bash start_agents.sh start
+# Check service health
+bash start_agents.sh status
+# Stop all services
+bash start_agents.sh stop
+```
+
+Or start manually:
+```bash
+# Terminal 1: Demo MCP Server
+cd mcp/demo && python server.py
+# Terminal 2: Denodo MCP Server  
+cd mcp/denodo && python server.py
+# Terminal 3: Agent Server
+cd agent && python server.py
+# Terminal 4: MCP Agent Server
+cd mcp/agent && python server.py
+```
+
+### 4. Integration with Chat Interface
+
+Add to `chat/mcp_config.json`:
+```json
+{
+  "servers": {
+    "multi-agent-research": {
+      "command": "python",
+      "args": ["mcp/agent/server.py"],
+      "env": {
+        "LANGRAPH_AGENTS_ENDPOINT": "http://localhost:8001"
+      }
+    }
+  }
+}
+```
+
+### Usage Examples
+
+**Basic Research Query**
+```python
+result = await mcp_client.call("multi_agent_research", {
+    "query": "Show me sales data for Q4 2023",
+    "research_mode": "data",
+    "user_email": "user@example.com"
+})
+```
+
+**Metadata Discovery**
+```python
+result = await mcp_client.call("multi_agent_research", {
+    "query": "What tables contain customer information?",
+    "research_mode": "metadata"
+})
+```
+
+**Full Analysis**
+```python
+result = await mcp_client.call("multi_agent_research", {
+    "query": "Analyze customer purchase trends and identify patterns",
+    "research_mode": "full"
+})
+```
+
+### Research Modes
+- `metadata`: Schema and structure discovery only
+- `data`: Data retrieval with permission validation
+- `analysis`: Full analysis with synthesis
+- `full`: Complete multi-agent research (default)
+
+### Service Endpoints
+| Service | Port | URL | Purpose |
+|---------|------|-----|---------|
+| Demo MCP | 8080 | http://localhost:8080 | Synthetic data generation |
+| Denodo MCP | 8081 | http://localhost:8081 | Data source access |
+| Agent Server | 8001 | http://localhost:8001 | Multi-agent orchestration |
+| MCP Agent | 8082 | http://localhost:8082 | Chat interface integration |
+
+### Monitoring & Health Checks
+
+**Health Check Endpoints**
+```bash
+curl http://localhost:8082/health
+curl http://localhost:8001/health  # Agent Server
+curl http://localhost:8080/health  # Demo MCP
+curl http://localhost:8081/health  # Denodo MCP
+```
+
+**Database Analytics**
+- Research session statistics
+- Agent execution performance
+- Token usage and costs
+- Success/failure rates
+
+### Development
+
+**Running Tests**
+```bash
+cd agent
+python -c "
+import asyncio
+from subagents import MetadataAgent
+from database import db_client
+async def test():
+    await db_client.connect()
+    agent = MetadataAgent()
+    result = await agent.execute('test-session', 'test task')
+    print(result)
+asyncio.run(test())
+"
+```
+
+**Adding New Agents**
+1. Create new agent class inheriting from `BaseAgent`
+2. Implement `_execute_logic` method
+3. Add to `AGENT_REGISTRY` in `subagents.py`
+4. Update orchestrator execution plans
+5. Add database enum entries if needed
+
+**Debugging**
+```bash
+export PYTHONPATH=.
+python -c "
+import logging
+logging.basicConfig(level=logging.DEBUG)
+from agent.server import app
+import uvicorn
+uvicorn.run(app, host='0.0.0.0', port=8001)
+"
+```
+
+### MVP Features Implemented
+
+- Core Multi-Agent System (specialized subagents, parallel execution, session management)
+- Database Integration (PostgreSQL schema, pooling, analytics)
+- MCP Integration (single MCP server, integration with Demo/Denodo, error handling)
+- Research Orchestration (query analysis, dynamic planning, result synthesis)
+- Operational Support (health monitoring, scripts, logging)
+
+### Future Enhancements (Phase 2)
+- Langraph workflow graphs, dynamic graph construction, advanced error recovery
+- Chain-of-thought streaming, context compression, intelligent agent selection
+- OpenTelemetry, Redis, advanced entitlement, scalability
+
+---
+
+This MVP implementation provides a solid foundation for multi-agent research capabilities while maintaining compatibility with the existing chat interface and MCP ecosystem.
 
 ## 📁 Project Structure
 
@@ -258,8 +364,8 @@ models:
 # Azure OpenAI (recommended)
 AZURE_OPENAI_API_KEY=your-azure-key
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com
-AZURE_OPENAI_DEPLOYMENT=your-deployment-name
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+AZURE_OPENAI_API_VERSION=2024-10-21
 
 # Or OpenAI
 OPENAI_API_KEY=your-openai-key

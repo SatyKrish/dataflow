@@ -17,13 +17,6 @@ RUN npm ci --no-audit --no-fund
 # Copy source
 COPY . .
 
-# Set build-time environment variables to prevent build failures
-ENV NEXTAUTH_URL=http://localhost:3000 \
-    NEXTAUTH_SECRET=build-time-secret \
-    AUTH_AZURE_AD_CLIENT_ID=build-time-placeholder \
-    AUTH_AZURE_AD_CLIENT_SECRET=build-time-placeholder \
-    AUTH_AZURE_AD_TENANT_ID=build-time-placeholder
-
 # Build with optimizations
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

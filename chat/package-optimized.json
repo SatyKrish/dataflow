@@ -1,12 +1,16 @@
 {
-  "name": "my-v0-project",
+  "name": "dataflow-chat-optimized",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "perf:lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json",
+    "perf:bundle": "npx @next/bundle-analyzer"
   },
   "dependencies": {
     "@ai-sdk/azure": "^1.3.23",
@@ -44,7 +48,6 @@
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
     "@tailwindcss/typography": "latest",
-    "@types/plotly.js": "^3.0.2",
     "ai": "^4.3.16",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
@@ -60,15 +63,16 @@
     "next-auth": "^4.24.11",
     "next-themes": "latest",
     "openai": "^5.5.1",
-    "plotly.js": "^3.0.1",
     "react": "^19",
     "react-day-picker": "9.7.0",
     "react-dom": "^19",
     "react-hook-form": "^7.54.1",
     "react-markdown": "latest",
-    "react-plotly.js": "^2.6.0",
     "react-resizable-panels": "^2.1.7",
     "react-syntax-highlighter": "latest",
+    "react-window": "^1.8.8",
+    "react-window-infinite-loader": "^1.0.9",
+    "recharts": "latest",
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
@@ -76,13 +80,28 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.2.4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/react-plotly.js": "^2.6.3",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/react-window": "^1.8.8",
+    "lighthouse": "^12.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5"
+    "typescript": "^5",
+    "webpack-bundle-analyzer": "^4.10.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
