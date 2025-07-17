@@ -113,19 +113,19 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
   }
   
   return (
-    <div className="border border-gray-700 rounded my-1 bg-gray-900 shadow-none">
-      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-700">
+    <div className="border border-gray-300 rounded my-1 bg-gray-100 shadow-none">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-300">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
           className="h-auto p-0 font-normal hover:bg-accent/10"
         >
-          <div className="flex items-center gap-2 text-gray-400">
+          <div className="flex items-center gap-2 text-gray-600">
             {getIcon()}
-            <span className="text-sm font-medium text-white">{getTitle()}</span>
+            <span className="text-sm font-medium text-gray-800">{getTitle()}</span>
           </div>
-          {isExpanded ? <ChevronUp className="h-4 w-4 ml-2 text-gray-400" /> : <ChevronDown className="h-4 w-4 ml-2 text-gray-400" />}
+          {isExpanded ? <ChevronUp className="h-4 w-4 ml-2 text-gray-600" /> : <ChevronDown className="h-4 w-4 ml-2 text-gray-600" />}
         </Button>
         
         <div className="flex items-center gap-1">
@@ -133,7 +133,7 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
             variant="ghost"
             size="sm"
             onClick={copyToClipboard}
-            className="h-7 w-7 p-0 hover:bg-gray-700 text-gray-400 hover:text-white"
+            className="h-7 w-7 p-0 hover:bg-gray-200 text-gray-600 hover:text-gray-800"
           >
             <Copy className="h-3 w-3" />
           </Button>
@@ -141,7 +141,7 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 hover:bg-gray-700 text-gray-400 hover:text-white"
+              className="h-7 w-7 p-0 hover:bg-gray-200 text-gray-600 hover:text-gray-800"
             >
               <Download className="h-3 w-3" />
             </Button>
