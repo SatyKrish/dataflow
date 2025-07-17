@@ -113,19 +113,19 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
   }
   
   return (
-    <div className="border border-border rounded-lg my-3 bg-card shadow-sm">
-      <div className="flex items-center justify-between p-3 border-b border-border">
+    <div className="border border-gray-700 rounded my-1 bg-gray-900 shadow-none">
+      <div className="flex items-center justify-between px-2 py-1 border-b border-gray-700">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
           className="h-auto p-0 font-normal hover:bg-accent/10"
         >
-          <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="flex items-center gap-2 text-gray-400">
             {getIcon()}
-            <span className="text-sm font-medium text-foreground">{getTitle()}</span>
+            <span className="text-sm font-medium text-white">{getTitle()}</span>
           </div>
-          {isExpanded ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+          {isExpanded ? <ChevronUp className="h-4 w-4 ml-2 text-gray-400" /> : <ChevronDown className="h-4 w-4 ml-2 text-gray-400" />}
         </Button>
         
         <div className="flex items-center gap-1">
@@ -133,7 +133,7 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
             variant="ghost"
             size="sm"
             onClick={copyToClipboard}
-            className="h-7 w-7 p-0 hover:bg-accent/10"
+            className="h-7 w-7 p-0 hover:bg-gray-700 text-gray-400 hover:text-white"
           >
             <Copy className="h-3 w-3" />
           </Button>
@@ -141,7 +141,7 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-7 p-0 hover:bg-accent/10"
+              className="h-7 w-7 p-0 hover:bg-gray-700 text-gray-400 hover:text-white"
             >
               <Download className="h-3 w-3" />
             </Button>
@@ -150,9 +150,9 @@ function CollapsibleCodeBlock({ language, content }: { language: string; content
       </div>
       
       {isExpanded && (
-        <div className="p-3 bg-muted rounded-b-lg">
-          <pre className="text-sm font-mono overflow-x-auto leading-relaxed text-foreground">
-            <code>{content}</code>
+        <div className="px-2 py-1 bg-gray-800 rounded-b">
+          <pre className="text-sm font-mono overflow-x-auto leading-relaxed text-gray-100">
+            <code className="text-gray-100">{content}</code>
           </pre>
         </div>
       )}
