@@ -6,6 +6,7 @@ import { Message } from "@ai-sdk/react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { MessageList } from "@/components/message-list"
+import { VirtualizedMessageList } from "@/components/virtualized-message-list"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { SendHorizonal, Sparkles, Code, BarChart3, AlertTriangle, CornerDownLeft, FileText, Plus, Table, GitBranch, PieChart, LineChart, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -116,7 +117,7 @@ export function ChatInterface({
       {/* Messages Area */}
       <div className="flex-1 min-h-0 relative">
         {hasMessages ? (
-          <MessageList messages={messages} onArtifactToggle={onArtifactToggle} isLoading={isLoading} />
+          <VirtualizedMessageList messages={messages} onArtifactToggle={onArtifactToggle} isLoading={isLoading} />
         ) : (          <ScrollArea className="h-full">
             <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-8 text-center">
               <div className="p-4 bg-gradient-to-br from-muted to-muted/50 rounded-sm mb-6 shadow-lg">
