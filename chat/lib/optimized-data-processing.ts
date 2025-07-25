@@ -171,68 +171,7 @@ function generateDataSummary(data: DataPoint[], columns: string[]) {
   }
 }
 
-/**
- * Optimized chart configuration for different user roles
- */
-export function getOptimizedChartConfig(
-  userRole: 'data-analyst' | 'product-owner' | 'finance-analyst' | 'developer',
-  chartType: string,
-  dataSize: number
-) {
-  const baseConfig = {
-    animation: dataSize < 100, // Disable animations for large datasets
-    throttleDelay: dataSize > 500 ? 200 : 100,
-    margin: { top: 20, right: 30, bottom: 20, left: 20 }
-  }
 
-  switch (userRole) {
-    case 'finance-analyst':
-      return {
-        ...baseConfig,
-        precision: 2,
-        showDataLabels: dataSize < 50,
-        enableZoom: true,
-        showTooltips: true,
-        colorScheme: 'professional' // Conservative colors
-      }
-    
-    case 'data-analyst':
-      return {
-        ...baseConfig,
-        precision: 4,
-        showDataLabels: dataSize < 100,
-        enableZoom: true,
-        showTooltips: true,
-        showStatistics: true,
-        colorScheme: 'analytical' // High contrast colors
-      }
-    
-    case 'product-owner':
-      return {
-        ...baseConfig,
-        precision: 1,
-        showDataLabels: dataSize < 30,
-        enableZoom: false,
-        showTooltips: true,
-        emphasizeTrends: true,
-        colorScheme: 'business' // Clear, simple colors
-      }
-    
-    case 'developer':
-      return {
-        ...baseConfig,
-        precision: 6,
-        showDataLabels: dataSize < 20,
-        enableZoom: true,
-        showTooltips: true,
-        showDebugInfo: true,
-        colorScheme: 'technical' // Detailed color coding
-      }
-    
-    default:
-      return baseConfig
-  }
-}
 
 /**
  * Memoized data aggregation for common operations

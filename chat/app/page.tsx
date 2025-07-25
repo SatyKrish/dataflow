@@ -14,8 +14,6 @@ import { PanelLeftOpen, PanelLeftClose, LayoutGrid } from "lucide-react"
 import { toast } from "sonner"
 import { detectArtifacts, type ArtifactContent } from "@/lib/artifact-detector"
 import { VirtualizedMessageList } from "@/components/virtualized-message-list"
-import { PerformanceDashboard } from "@/components/performance-dashboard"
-import { UserProvider } from "@/components/user-context"
 import { useMemoryManagement, useDebouncedStorage } from "@/lib/memory-management"
 import { ChatStorage, type TimelineGroup } from "@/lib/chat-storage"
 import { cn } from "@/lib/utils"
@@ -358,18 +356,11 @@ function ChatPageContent() {
             selectedArtifactId={selectedArtifactId}
           />
         )}
-        
-        {/* Performance Dashboard */}
-        <PerformanceDashboard />
       </div>
     </>
   )
 }
 
 export default function ChatPage() {
-  return (
-    <UserProvider>
-      <ChatPageContent />
-    </UserProvider>
-  )
+  return <ChatPageContent />
 }
